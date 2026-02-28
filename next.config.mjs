@@ -1,4 +1,26 @@
-/** @type {import('next').NextConfig} */
-const nextConfig = {};
+import withPWA from "next-pwa";
 
-export default nextConfig;
+const isDev = process.env.NODE_ENV === "development";
+
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  reactStrictMode: true,
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "*.supabase.co",
+        pathname: "/storage/v1/object/public/**",
+      },
+    ],
+  },
+};
+
+const pwa = withPWA({
+  dest: "public",
+  register: true,
+  skipWaiting: true,
+  disable: isDev,
+});
+
+export default pwa(nextConfig);
