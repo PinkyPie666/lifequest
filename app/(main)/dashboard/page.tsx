@@ -6,7 +6,7 @@ import { useSoundEffect } from "@/hooks/useSoundEffect";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { getCurrentUser, fetchHabits, fetchTodayLogs, checkInHabit, getProfile } from "@/lib/supabase/api";
+import { getCurrentUser, fetchHabits, fetchTodayLogs, checkInHabit, getOrCreateProfile } from "@/lib/supabase/api";
 import type { HabitRow, HabitLog, Profile } from "@/types/database";
 
 export default function DashboardPage() {
@@ -27,7 +27,11 @@ export default function DashboardPage() {
         return;
       }
       const [profileRes, habitsRes, logsRes] = await Promise.all([
-        getProfile(user.id),
+        getOrCreateProfile(user.id, {
+          email: user.email,
+          full_name: user.user_metadata?.full_name ?? null,
+          avatar_url: user.user_metadata?.avatar_url ?? null,
+        }),
         fetchHabits(user.id),
         fetchTodayLogs(user.id),
       ]);
@@ -78,7 +82,7 @@ export default function DashboardPage() {
     if (data) {
       setTodayLogs((prev) => [...prev.filter((l) => l.habit_id !== habitId), data]);
       // Refresh profile for updated XP
-      const profileRes = await getProfile(profile.id);
+      const profileRes = await getOrCreateProfile(profile.id);
       if (profileRes.data) setProfile(profileRes.data);
     }
 
@@ -104,7 +108,20 @@ export default function DashboardPage() {
     );
   }
 
-  if (!profile) return null;
+  if (!profile) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center space-y-3 px-6">
+          <div className="text-5xl">⚠️</div>
+          <p className="font-heading text-base text-white">ไม่พบข้อมูลโปรไฟล์</p>
+          <p className="font-body text-sm text-slate-400">กรุณาตรวจสอบการตั้งค่า Supabase</p>
+          <button onClick={() => router.replace("/login")} className="game-btn bg-purple-600 text-white font-heading text-sm px-4 py-2 rounded-xl">
+            กลับหน้า Login
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="px-4 pt-6 pb-28 safe-top space-y-4">

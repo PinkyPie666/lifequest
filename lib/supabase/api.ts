@@ -56,6 +56,32 @@ export async function getProfile(userId: string) {
   return { data, error };
 }
 
+export async function getOrCreateProfile(userId: string, meta?: { email?: string | null; full_name?: string | null; avatar_url?: string | null }) {
+  const supabase = createClient();
+  const { data } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", userId)
+    .single();
+
+  if (data) return { data, error: null };
+
+  // Profile doesn't exist — create it
+  const username = meta?.email ? meta.email.split("@")[0] : null;
+  const { data: newProfile, error: createError } = await supabase
+    .from("profiles")
+    .upsert({
+      id: userId,
+      username,
+      full_name: meta?.full_name ?? null,
+      avatar_url: meta?.avatar_url ?? null,
+    })
+    .select("*")
+    .single();
+
+  return { data: newProfile, error: createError };
+}
+
 export async function updateProfile(userId: string, updates: ProfileUpdate) {
   const supabase = createClient();
   const { data, error } = await supabase
