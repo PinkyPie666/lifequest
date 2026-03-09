@@ -78,7 +78,7 @@ export default function SettingsPage() {
         <div className="space-y-2.5">
           <div className="flex items-center justify-between">
             <span className="text-sm text-[#94a3b8]">Version</span>
-            <span className="font-game text-sm text-[#475569]">2.0.0</span>
+            <span className="font-game text-sm text-[#475569]">1.0.0</span>
           </div>
           <div className="flex items-center justify-between">
             <span className="text-sm text-[#94a3b8]">Storage</span>
@@ -109,7 +109,7 @@ export default function SettingsPage() {
 
       {/* Footer */}
       <p className="font-game text-xs text-[#334155] text-center pb-4">
-        LIFEQUEST v2.0.0 // MADE WITH ♥
+        LIFEQUEST v1.0.0 // MADE WITH ♥
       </p>
     </div>
   );

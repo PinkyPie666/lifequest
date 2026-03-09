@@ -204,7 +204,7 @@ export default function LandingPage() {
       </div>
 
       <div className="absolute bottom-4 text-center z-20">
-        <p className="font-game text-xs text-[#334155]">v2.0.0 // MADE WITH ♥</p>
+        <p className="font-game text-xs text-[#334155]">v1.0.0 // MADE WITH ♥</p>
       </div>
     </div>
   );
