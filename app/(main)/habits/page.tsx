@@ -195,8 +195,8 @@ export default function HabitsPage() {
           <div>
             <div className="flex items-center gap-2 mb-3">
               <span className="text-lg">🏆</span>
-              <h2 className="font-heading text-base text-[#fbbf24]">ยอดฮิต</h2>
-              <div className="flex-1 h-px bg-gradient-to-r from-[#fbbf24]/30 to-transparent" />
+              <h2 className="font-heading text-base" style={{ color: "var(--theme-xp)" }}>ยอดฮิต</h2>
+              <div className="flex-1 h-px" style={{ background: "linear-gradient(to right, color-mix(in srgb, var(--theme-xp) 30%, transparent), transparent)" }} />
             </div>
             <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2 -mx-1 px-1">
               {popularTemplates.map((tmpl, i) => (
@@ -215,20 +215,20 @@ export default function HabitsPage() {
                     <div className="text-4xl mb-2 drop-shadow-lg">{tmpl.emoji}</div>
                     <h3 className="font-heading text-sm text-white drop-shadow">{tmpl.name}</h3>
                   </div>
-                  <div className="bg-[#13132b] p-3">
-                    <p className="text-xs text-[#94a3b8] line-clamp-2 leading-relaxed">{tmpl.description}</p>
+                  <div className="p-3" style={{ background: "var(--theme-bg-dark)" }}>
+                    <p className="text-xs line-clamp-2 leading-relaxed" style={{ color: "var(--theme-text-dim)" }}>{tmpl.description}</p>
                     <div className="flex items-center gap-2 mt-2">
-                      <span className="font-game text-[10px] text-[#8b5cf6] bg-[#8b5cf6]/10 px-2 py-0.5 rounded-md">
+                      <span className="font-game text-[10px] px-2 py-0.5 rounded-md" style={{ color: "var(--theme-primary)", background: "color-mix(in srgb, var(--theme-primary) 10%, transparent)" }}>
                         {tmpl.habits.length} ภารกิจ
                       </span>
                       <button
                         onClick={(e) => { e.stopPropagation(); handleLike(tmpl.id); }}
                         className="ml-auto flex items-center gap-1 font-game text-[10px] transition-all active:scale-90"
                       >
-                        <span className={likedIds.has(tmpl.id) ? "text-red-400" : "text-[#475569]"}>
+                        <span className={likedIds.has(tmpl.id) ? "text-red-400" : ""} style={!likedIds.has(tmpl.id) ? { color: "var(--theme-text-muted)" } : undefined}>
                           {likedIds.has(tmpl.id) ? "❤️" : "🤍"}
                         </span>
-                        <span className={likedIds.has(tmpl.id) ? "text-red-400" : "text-[#475569]"}>
+                        <span className={likedIds.has(tmpl.id) ? "text-red-400" : ""} style={!likedIds.has(tmpl.id) ? { color: "var(--theme-text-muted)" } : undefined}>
                           {likeCounts[tmpl.id] ? (likeCounts[tmpl.id] > 1000 ? `${(likeCounts[tmpl.id] / 1000).toFixed(1)}k` : likeCounts[tmpl.id]) : 0}
                         </span>
                       </button>
@@ -245,12 +245,11 @@ export default function HabitsPage() {
               <button
                 key={cat.id}
                 onClick={() => { play("click"); setTemplateFilter(cat.id as TemplateCategory | "all"); }}
-                className={cn(
-                  "px-3 py-2 rounded-xl font-game text-xs whitespace-nowrap transition-all flex-shrink-0 flex items-center gap-1.5 border",
-                  templateFilter === cat.id
-                    ? "border-[#8b5cf6]/50 bg-[#8b5cf6]/15 text-[#c4b5fd]"
-                    : "border-[#2a2a5a]/50 text-[#475569] hover:text-[#94a3b8] hover:border-[#475569]/50"
-                )}
+                className="px-3 py-2 rounded-xl font-game text-xs whitespace-nowrap transition-all flex-shrink-0 flex items-center gap-1.5 border"
+                style={templateFilter === cat.id
+                  ? { borderColor: "color-mix(in srgb, var(--theme-primary) 50%, transparent)", background: "color-mix(in srgb, var(--theme-primary) 15%, transparent)", color: "var(--theme-primary)" }
+                  : { borderColor: "color-mix(in srgb, var(--theme-border) 50%, transparent)", color: "var(--theme-text-muted)" }
+                }
               >
                 <span>{cat.emoji}</span>
                 {cat.label}
@@ -261,10 +260,10 @@ export default function HabitsPage() {
           {/* ─── Template Grid ─────────────── */}
           <div className="flex items-center gap-2 mb-1">
             <span className="text-base">📦</span>
-            <h2 className="font-heading text-sm text-white">
+            <h2 className="font-heading text-sm" style={{ color: "var(--theme-text)" }}>
               {templateFilter === "all" ? "เทมเพลตทั้งหมด" : TEMPLATE_CATEGORIES.find((c) => c.id === templateFilter)?.label}
             </h2>
-            <span className="font-game text-xs text-[#475569]">({filteredTemplates.length})</span>
+            <span className="font-game text-xs" style={{ color: "var(--theme-text-muted)" }}>({filteredTemplates.length})</span>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -281,10 +280,10 @@ export default function HabitsPage() {
                   <div className="text-3xl mb-1 drop-shadow-lg">{tmpl.emoji}</div>
                   <h3 className="font-heading text-xs text-white drop-shadow leading-tight">{tmpl.name}</h3>
                 </div>
-                <div className="bg-[#13132b] p-2.5">
-                  <p className="text-[11px] text-[#94a3b8] line-clamp-2 leading-relaxed">{tmpl.description}</p>
+                <div className="p-2.5" style={{ background: "var(--theme-bg-dark)" }}>
+                  <p className="text-[11px] line-clamp-2 leading-relaxed" style={{ color: "var(--theme-text-dim)" }}>{tmpl.description}</p>
                   <div className="flex items-center gap-1.5 mt-2">
-                    <span className="font-game text-[9px] text-[#8b5cf6] bg-[#8b5cf6]/10 px-1.5 py-0.5 rounded">
+                    <span className="font-game text-[9px] px-1.5 py-0.5 rounded" style={{ color: "var(--theme-primary)", background: "color-mix(in srgb, var(--theme-primary) 10%, transparent)" }}>
                       {tmpl.habits.length} ภารกิจ
                     </span>
                     <button
@@ -292,7 +291,7 @@ export default function HabitsPage() {
                       className="ml-auto flex items-center gap-0.5 font-game text-[9px] transition-all active:scale-90"
                     >
                       <span>{likedIds.has(tmpl.id) ? "❤️" : "🤍"}</span>
-                      <span className={likedIds.has(tmpl.id) ? "text-red-400" : "text-[#475569]"}>
+                      <span className={likedIds.has(tmpl.id) ? "text-red-400" : ""} style={!likedIds.has(tmpl.id) ? { color: "var(--theme-text-muted)" } : undefined}>
                         {likeCounts[tmpl.id] ? (likeCounts[tmpl.id] > 1000 ? `${(likeCounts[tmpl.id] / 1000).toFixed(1)}k` : likeCounts[tmpl.id]) : 0}
                       </span>
                     </button>
@@ -307,11 +306,12 @@ export default function HabitsPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.3 }}
-            className="game-card p-5 text-center border-dashed border-[#8b5cf6]/30"
+            className="game-card p-5 text-center border-dashed"
+            style={{ borderColor: "color-mix(in srgb, var(--theme-primary) 30%, transparent)" }}
           >
             <p className="text-3xl mb-2">✨</p>
-            <p className="font-heading text-sm text-white mb-1">สร้างภารกิจเอง</p>
-            <p className="text-xs text-[#94a3b8] mb-3">ไม่เจอที่ชอบ? ออกแบบภารกิจของคุณเอง!</p>
+            <p className="font-heading text-sm mb-1" style={{ color: "var(--theme-text)" }}>สร้างภารกิจเอง</p>
+            <p className="text-xs mb-3" style={{ color: "var(--theme-text-dim)" }}>ไม่เจอที่ชอบ? ออกแบบภารกิจของคุณเอง!</p>
             <Link href="/habits/new/edit" onClick={() => play("click")}>
               <span className="game-btn game-btn-primary px-5 py-2 text-xs font-game inline-block">
                 + สร้างภารกิจใหม่
@@ -432,97 +432,150 @@ export default function HabitsPage() {
         </motion.div>
       )}
 
-      {/* ═══════════════ TEMPLATE DETAIL MODAL ═══════════════ */}
+      {/* ═══════════════ TEMPLATE DETAIL MODAL (Spotify-style) ═══════════════ */}
       <AnimatePresence>
         {selectedTemplate && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-end justify-center bg-black/80"
+            className="fixed inset-0 z-50 flex items-start justify-center bg-black/80 overflow-y-auto"
             onClick={() => setSelectedTemplate(null)}
           >
             <motion.div
-              initial={{ y: "100%" }}
-              animate={{ y: 0 }}
-              exit={{ y: "100%" }}
-              transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="w-full max-w-lg bg-[#0c0c1d] rounded-t-3xl max-h-[85vh] overflow-hidden"
+              initial={{ opacity: 0, y: 40 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 40 }}
+              transition={{ type: "spring", damping: 28, stiffness: 300 }}
+              className="w-full max-w-lg mt-10 mb-10 mx-4 rounded-2xl overflow-hidden"
+              style={{ background: "var(--theme-bg-card)" }}
               onClick={(e) => e.stopPropagation()}
             >
-              {/* Gradient Header */}
-              <div className={cn("bg-gradient-to-br p-6 relative", selectedTemplate.gradient)}>
+              {/* ── Gradient Header ── */}
+              <div className={cn("bg-gradient-to-br p-5 pb-4 relative", selectedTemplate.gradient)}>
                 <button
                   onClick={() => setSelectedTemplate(null)}
-                  className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/30 backdrop-blur-sm flex items-center justify-center text-white/80 hover:text-white"
+                  className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/30 backdrop-blur-sm flex items-center justify-center text-white/80 hover:text-white transition-colors"
                 >
                   ✕
                 </button>
-                <div className="text-5xl mb-3 drop-shadow-lg">{selectedTemplate.emoji}</div>
+                <div className="text-5xl mb-2 drop-shadow-lg">{selectedTemplate.emoji}</div>
                 <h2 className="font-heading text-xl text-white drop-shadow mb-1">{selectedTemplate.name}</h2>
-                <p className="text-sm text-white/80">{selectedTemplate.description}</p>
-                <div className="flex items-center gap-2 mt-3">
+                <p className="text-sm text-white/80 leading-relaxed">{selectedTemplate.description}</p>
+                <div className="flex flex-wrap items-center gap-2 mt-3">
                   {selectedTemplate.tags.map((tag) => (
-                    <span key={tag} className="text-xs bg-white/20 backdrop-blur-sm text-white px-2 py-0.5 rounded-full">
+                    <span key={tag} className="text-xs bg-white/20 backdrop-blur-sm text-white px-2.5 py-0.5 rounded-full">
                       {tag}
                     </span>
                   ))}
-                  <span className="text-xs bg-white/20 backdrop-blur-sm text-white px-2 py-0.5 rounded-full">
+                  <span className="text-xs bg-white/20 backdrop-blur-sm text-white px-2.5 py-0.5 rounded-full">
                     🔥 {(selectedTemplate.popularity / 1000).toFixed(1)}k ผู้ใช้
                   </span>
                 </div>
               </div>
 
-              {/* Habit List */}
-              <div className="p-4 overflow-y-auto max-h-[40vh]">
-                <p className="font-heading text-sm text-[#fbbf24] mb-3">
-                  ⚔️ ภารกิจในเทมเพลต ({selectedTemplate.habits.length})
-                </p>
-                <div className="space-y-2">
-                  {selectedTemplate.habits.map((habit, idx) => (
-                    <div key={idx} className="game-card p-3 flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-[#1a1a3a] border border-[#2a2a5a] flex items-center justify-center text-xl flex-shrink-0">
-                        {habit.emoji}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm text-white font-game">{habit.name}</p>
-                        <div className="flex items-center gap-2 mt-0.5">
-                          <span className="font-game text-xs text-[#8b5cf6]">+{habit.importance * 10 + 5} XP</span>
-                          <span className="font-game text-xs text-[#475569]">⏰ {habit.reminder_time}</span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+              {/* ── Action Row (Spotify-style) ── */}
+              <div className="px-5 py-4 flex items-center gap-3">
+                {/* Main CTA - Add/Use */}
+                <button
+                  onClick={() => handleUseTemplate(selectedTemplate)}
+                  disabled={applying}
+                  className="w-12 h-12 rounded-full flex items-center justify-center text-white text-xl shadow-lg transition-all active:scale-90 flex-shrink-0"
+                  style={{
+                    background: applying
+                      ? "var(--theme-text-muted)"
+                      : "linear-gradient(135deg, var(--theme-primary), var(--theme-secondary))",
+                  }}
+                >
+                  {applying ? "⏳" : "＋"}
+                </button>
+
+                {/* Like */}
+                <button
+                  onClick={() => handleLike(selectedTemplate.id)}
+                  className="w-10 h-10 rounded-full flex items-center justify-center text-lg transition-all active:scale-90 flex-shrink-0"
+                  style={{
+                    color: likedIds.has(selectedTemplate.id) ? "#ef4444" : "var(--theme-text-dim)",
+                  }}
+                >
+                  {likedIds.has(selectedTemplate.id) ? "❤️" : "🤍"}
+                </button>
+
+                {/* Share */}
+                <button
+                  onClick={() => {
+                    play("click");
+                    if (navigator.share) {
+                      navigator.share({
+                        title: selectedTemplate.name,
+                        text: `ลองเทมเพลต "${selectedTemplate.name}" ใน LifeQuest! ${selectedTemplate.description}`,
+                      }).catch(() => {});
+                    } else {
+                      navigator.clipboard.writeText(
+                        `ลองเทมเพลต "${selectedTemplate.name}" ใน LifeQuest! ${selectedTemplate.description}`
+                      );
+                    }
+                  }}
+                  className="w-10 h-10 rounded-full flex items-center justify-center text-lg transition-all active:scale-90 flex-shrink-0"
+                  style={{ color: "var(--theme-text-dim)" }}
+                >
+                  📤
+                </button>
+
+                {/* Spacer + like count */}
+                <div className="flex-1" />
+                <span className="font-game text-xs" style={{ color: "var(--theme-text-dim)" }}>
+                  {likeCounts[selectedTemplate.id]
+                    ? likeCounts[selectedTemplate.id] > 1000
+                      ? `❤️ ${(likeCounts[selectedTemplate.id] / 1000).toFixed(1)}k`
+                      : `❤️ ${likeCounts[selectedTemplate.id]}`
+                    : ""}
+                </span>
               </div>
 
-              {/* Action */}
-              <div className="p-4 border-t border-[#2a2a5a] space-y-2">
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => handleLike(selectedTemplate.id)}
-                    className={cn(
-                      "px-4 py-3.5 rounded-xl font-heading text-base transition-all active:scale-[0.95] border",
-                      likedIds.has(selectedTemplate.id)
-                        ? "border-red-400/50 bg-red-400/10 text-red-400"
-                        : "border-[#2a2a5a] text-[#94a3b8]"
-                    )}
+              {/* ── Habit List ── */}
+              <div className="px-5 pb-2">
+                <p className="font-heading text-sm mb-3" style={{ color: "var(--theme-xp)" }}>
+                  ⚔️ ภารกิจในเทมเพลต ({selectedTemplate.habits.length})
+                </p>
+              </div>
+              <div className="px-5 pb-5 space-y-2 max-h-[40vh] overflow-y-auto">
+                {selectedTemplate.habits.map((habit, idx) => (
+                  <div
+                    key={idx}
+                    className="game-card p-3 flex items-center gap-3"
                   >
-                    {likedIds.has(selectedTemplate.id) ? "❤️" : "🤍"}
-                  </button>
-                  <button
-                    onClick={() => handleUseTemplate(selectedTemplate)}
-                    disabled={applying}
-                    className={cn(
-                      "flex-1 py-3.5 rounded-xl font-heading text-base transition-all",
-                      applying
-                        ? "bg-[#475569] text-[#94a3b8] cursor-wait"
-                        : "bg-gradient-to-r from-[#8b5cf6] to-[#6366f1] text-white hover:shadow-lg hover:shadow-purple-500/25 active:scale-[0.98]"
-                    )}
-                  >
-                    {applying ? "⏳ กำลังเพิ่ม..." : `✨ ใช้เทมเพลตนี้`}
-                  </button>
-                </div>
+                    <div
+                      className="w-10 h-10 rounded-xl border flex items-center justify-center text-xl flex-shrink-0"
+                      style={{ background: "var(--theme-bg-dark)", borderColor: "var(--theme-border)" }}
+                    >
+                      {habit.emoji}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-game" style={{ color: "var(--theme-text)" }}>{habit.name}</p>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className="font-game text-xs" style={{ color: "var(--theme-primary)" }}>+{habit.importance * 10 + 5} XP</span>
+                        <span className="font-game text-xs" style={{ color: "var(--theme-text-muted)" }}>⏰ {habit.reminder_time}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* ── Bottom CTA bar ── */}
+              <div className="px-5 pb-5 pt-2">
+                <button
+                  onClick={() => handleUseTemplate(selectedTemplate)}
+                  disabled={applying}
+                  className="w-full py-3.5 rounded-xl font-heading text-base text-white transition-all active:scale-[0.98] shadow-lg"
+                  style={{
+                    background: applying
+                      ? "var(--theme-text-muted)"
+                      : "linear-gradient(to right, var(--theme-primary), var(--theme-secondary))",
+                  }}
+                >
+                  {applying ? "⏳ กำลังเพิ่ม..." : "✨ ใช้เทมเพลตนี้"}
+                </button>
               </div>
             </motion.div>
           </motion.div>
@@ -534,8 +587,8 @@ export default function HabitsPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 px-4" onClick={() => setDeleteId(null)}>
           <div className="game-card p-6 w-full max-w-xs text-center space-y-4" onClick={(e) => e.stopPropagation()}>
             <p className="text-3xl">🗑️</p>
-            <p className="font-heading text-base text-[#ef4444]">ลบภารกิจ?</p>
-            <p className="text-sm text-[#94a3b8]">ลบภารกิจนี้ถาวร ไม่สามารถกู้คืนได้</p>
+            <p className="font-heading text-base" style={{ color: "var(--theme-hp)" }}>ลบภารกิจ?</p>
+            <p className="text-sm" style={{ color: "var(--theme-text-dim)" }}>ลบภารกิจนี้ถาวร ไม่สามารถกู้คืนได้</p>
             <div className="flex gap-3">
               <button onClick={() => { play("click"); setDeleteId(null); }} className="flex-1 game-btn game-btn-secondary py-2.5 font-game text-sm">ยกเลิก</button>
               <button onClick={handleDelete} className="flex-1 game-btn game-btn-danger py-2.5 font-game text-sm">ลบเลย</button>
