@@ -1,11 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { useHabitStore } from "@/stores/useHabitStore";
+import { getCurrentUser, fetchHabitById, createHabit, updateHabit, deleteHabit, fetchHabits } from "@/lib/supabase/api";
 import { useSoundEffect } from "@/hooks/useSoundEffect";
-import type { HabitCategory } from "@/types";
 import { useRouter, useParams } from "next/navigation";
 
 const EMOJI_LIST = [
@@ -16,12 +15,12 @@ const EMOJI_LIST = [
 ];
 
 const CATEGORY_OPTIONS = [
-  { id: "health", label: "HEALTH", emoji: "❤️" },
-  { id: "mental", label: "MIND", emoji: "🧠" },
-  { id: "finance", label: "MONEY", emoji: "💰" },
-  { id: "learning", label: "LEARN", emoji: "📚" },
-  { id: "work", label: "WORK", emoji: "💼" },
-  { id: "other", label: "OTHER", emoji: "✨" },
+  { id: "health", label: "สุขภาพ", emoji: "❤️" },
+  { id: "mental", label: "จิตใจ", emoji: "🧠" },
+  { id: "finance", label: "การเงิน", emoji: "💰" },
+  { id: "learning", label: "เรียนรู้", emoji: "📚" },
+  { id: "work", label: "งาน", emoji: "💼" },
+  { id: "other", label: "อื่นๆ", emoji: "✨" },
 ];
 
 export default function EditHabitPage() {
@@ -29,81 +28,99 @@ export default function EditHabitPage() {
   const params = useParams();
   const habitId = params.id as string;
   const { play } = useSoundEffect();
-  const { habits, updateHabit, removeHabit } = useHabitStore();
-
-  const habit = habits.find((h) => h.id === habitId);
   const isNew = habitId === "new";
 
-  const [emoji, setEmoji] = useState(habit?.emoji || habit?.icon || "🎯");
-  const [name, setName] = useState(habit?.name || "");
-  const [description, setDescription] = useState(habit?.description || "");
-  const [category, setCategory] = useState<string>(habit?.category || "other");
-  const [reminderTime, setReminderTime] = useState(habit?.reminderTime || "08:00");
-  const [importance, setImportance] = useState(habit?.importance ?? 5);
+  const [loading, setLoading] = useState(!isNew);
+  const [saving, setSaving] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
+
+  const [emoji, setEmoji] = useState("🎯");
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [category, setCategory] = useState("other");
+  const [reminderTime, setReminderTime] = useState("08:00");
+  const [importance, setImportance] = useState(5);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  useEffect(() => {
-    if (!isNew && !habit) {
-      router.push("/habits");
-    }
-  }, [isNew, habit, router]);
+  const loadData = useCallback(async () => {
+    const user = await getCurrentUser();
+    if (!user) { router.push("/login"); return; }
+    setUserId(user.id);
 
-  const handleSave = () => {
-    if (!name.trim()) return;
+    if (!isNew) {
+      const { data } = await fetchHabitById(habitId);
+      if (!data) { router.push("/habits"); return; }
+      setEmoji(data.emoji || "🎯");
+      setName(data.name);
+      setDescription(data.description || "");
+      setCategory(data.category || "other");
+      setReminderTime(data.reminder_time || "08:00");
+      setImportance(data.importance ?? 5);
+    }
+    setLoading(false);
+  }, [habitId, isNew, router]);
+
+  useEffect(() => { loadData(); }, [loadData]);
+
+  const handleSave = async () => {
+    if (!name.trim() || !userId) return;
+    setSaving(true);
     play("success");
 
     if (isNew) {
-      const { addHabit } = useHabitStore.getState();
-      addHabit({
-        id: `habit-${Date.now()}`,
-        userId: "local",
+      const { data: allHabits } = await fetchHabits(userId);
+      const { error } = await createHabit({
+        user_id: userId,
         emoji,
         name: name.trim(),
-        description: description.trim() || undefined,
-        icon: emoji,
-        category: category as HabitCategory,
-        difficulty: "medium",
-        frequency: "daily",
-        targetDays: [0, 1, 2, 3, 4, 5, 6],
-        reminderTime,
-        reminderEnabled: true,
+        description: description.trim() || null,
+        category,
+        reminder_time: reminderTime,
+        reminder_enabled: true,
         importance,
-        sortOrder: habits.length,
-        currentStreak: 0,
-        longestStreak: 0,
-        totalCompletions: 0,
-        xpReward: Math.round(importance * 5),
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        isActive: true,
+        sort_order: allHabits.length,
       });
+      if (error) { console.error("Create habit error:", error); setSaving(false); return; }
     } else {
-      updateHabit(habitId, {
+      const { error } = await updateHabit(habitId, {
         emoji,
         name: name.trim(),
-        description: description.trim() || undefined,
-        icon: emoji,
-        category: category as HabitCategory,
-        reminderTime,
+        description: description.trim() || null,
+        category,
+        reminder_time: reminderTime,
         importance,
-        xpReward: Math.round(importance * 5),
-        updatedAt: new Date().toISOString(),
       });
+      if (error) { console.error("Update habit error:", error); setSaving(false); return; }
     }
     router.push("/habits");
   };
 
-  const handleDelete = () => {
-    play("error");
-    removeHabit(habitId);
+  const handleArchive = async () => {
+    play("click");
+    await updateHabit(habitId, { is_active: false });
     router.push("/habits");
   };
 
-  return (
-    <div className="px-4 pt-6 pb-8 safe-top space-y-4">
-      <div className="fixed inset-0 scanline pointer-events-none z-10" />
+  const handleDelete = async () => {
+    play("error");
+    await deleteHabit(habitId);
+    router.push("/habits");
+  };
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center space-y-3">
+          <div className="w-10 h-10 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="font-body text-sm text-slate-400">กำลังโหลด...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="px-4 pt-6 pb-24 safe-top space-y-4 max-w-lg mx-auto">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -10 }}
@@ -112,21 +129,21 @@ export default function EditHabitPage() {
       >
         <button
           onClick={() => { play("click"); router.back(); }}
-          className="pixel-btn bg-[#1e1e3a] hover:bg-[#2a2a5a] text-[#94a3b8] font-pixel text-[9px] px-3 py-1"
+          className="game-btn bg-slate-700 hover:bg-slate-600 text-slate-300 font-heading text-xs px-3 py-1.5 rounded-lg"
         >
-          ← BACK
+          ← กลับ
         </button>
-        <h1 className="font-pixel text-[12px] text-[#fbbf24] retro-text-shadow flex-1">
-          {isNew ? "⚔️ NEW QUEST" : "✏️ EDIT QUEST"}
+        <h1 className="font-heading text-lg text-amber-400 flex-1">
+          {isNew ? "⚔️ สร้างภารกิจใหม่" : "✏️ แก้ไขภารกิจ"}
         </h1>
       </motion.div>
 
       {/* Emoji picker */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
-        <p className="font-pixel text-[8px] text-[#94a3b8] mb-2">ICON</p>
+        <p className="font-heading text-xs text-slate-400 mb-2">ไอคอน</p>
         <button
           onClick={() => { play("click"); setShowEmojiPicker(!showEmojiPicker); }}
-          className="w-14 h-14 pixel-card flex items-center justify-center text-3xl hover:bg-[#1a1a3a] transition-colors"
+          className="w-14 h-14 game-card flex items-center justify-center text-3xl hover:bg-white/5 transition-colors rounded-xl"
         >
           {emoji}
         </button>
@@ -134,17 +151,17 @@ export default function EditHabitPage() {
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
-            className="mt-2 pixel-card p-3 grid grid-cols-8 gap-2"
+            className="mt-2 game-card p-3 grid grid-cols-8 gap-2 rounded-xl"
           >
             {EMOJI_LIST.map((e) => (
               <button
                 key={e}
                 onClick={() => { play("coin"); setEmoji(e); setShowEmojiPicker(false); }}
                 className={cn(
-                  "w-9 h-9 flex items-center justify-center text-lg border-2 transition-all",
+                  "w-9 h-9 flex items-center justify-center text-lg rounded-lg border-2 transition-all",
                   emoji === e
-                    ? "border-[#fbbf24] bg-[#fbbf24]/10"
-                    : "border-[#2a2a5a] hover:border-[#8b5cf6]"
+                    ? "border-amber-400 bg-amber-400/10"
+                    : "border-transparent hover:border-purple-500/50"
                 )}
               >
                 {e}
@@ -156,45 +173,45 @@ export default function EditHabitPage() {
 
       {/* Name */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-        <p className="font-pixel text-[8px] text-[#94a3b8] mb-2">QUEST NAME</p>
+        <p className="font-heading text-xs text-slate-400 mb-2">ชื่อภารกิจ</p>
         <input
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="เช่น ออกกำลังกาย, อ่านหนังสือ..."
-          className="w-full bg-[#0c0c1d] border-2 border-[#2a2a5a] px-4 py-3 text-lg text-white placeholder-[#475569] focus:border-[#8b5cf6] focus:outline-none transition-colors font-retro"
+          className="w-full bg-slate-800/60 border border-slate-700 rounded-xl px-4 py-3 text-lg text-white placeholder-slate-500 focus:border-purple-500 focus:outline-none transition-colors font-body"
           autoFocus={isNew}
         />
       </motion.div>
 
       {/* Description */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
-        <p className="font-pixel text-[8px] text-[#94a3b8] mb-2">DESCRIPTION (OPTIONAL)</p>
+        <p className="font-heading text-xs text-slate-400 mb-2">รายละเอียด (ไม่จำเป็น)</p>
         <textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           placeholder="รายละเอียดเพิ่มเติม..."
           rows={2}
-          className="w-full bg-[#0c0c1d] border-2 border-[#2a2a5a] px-4 py-2 text-sm text-white placeholder-[#475569] focus:border-[#8b5cf6] focus:outline-none transition-colors font-retro resize-none"
+          className="w-full bg-slate-800/60 border border-slate-700 rounded-xl px-4 py-2 text-sm text-white placeholder-slate-500 focus:border-purple-500 focus:outline-none transition-colors font-body resize-none"
         />
       </motion.div>
 
       {/* Category */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-        <p className="font-pixel text-[8px] text-[#94a3b8] mb-2">CATEGORY</p>
+        <p className="font-heading text-xs text-slate-400 mb-2">หมวดหมู่</p>
         <div className="grid grid-cols-3 gap-2">
           {CATEGORY_OPTIONS.map((cat) => (
             <button
               key={cat.id}
               onClick={() => { play("click"); setCategory(cat.id); }}
               className={cn(
-                "pixel-card p-2 flex flex-col items-center gap-1 transition-all text-center",
+                "game-card p-2 flex flex-col items-center gap-1 transition-all text-center rounded-xl",
                 category === cat.id
-                  ? "border-[#8b5cf6] bg-[#8b5cf6]/10 shadow-[0_0_10px_rgba(139,92,246,0.2)]"
+                  ? "border-purple-500 bg-purple-500/10 shadow-[0_0_12px_rgba(139,92,246,0.25)]"
                   : "hover:bg-white/5"
               )}
             >
               <span className="text-lg">{cat.emoji}</span>
-              <span className="font-pixel text-[7px] text-white">{cat.label}</span>
+              <span className="font-heading text-[10px] text-white">{cat.label}</span>
             </button>
           ))}
         </div>
@@ -202,13 +219,13 @@ export default function EditHabitPage() {
 
       {/* Reminder time */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
-        <p className="font-pixel text-[8px] text-[#94a3b8] mb-2">⏰ REMINDER TIME</p>
-        <div className="pixel-card p-3 flex items-center gap-3">
+        <p className="font-heading text-xs text-slate-400 mb-2">⏰ เวลาแจ้งเตือน</p>
+        <div className="game-card p-3 flex items-center gap-3 rounded-xl">
           <input
             type="time"
             value={reminderTime}
             onChange={(e) => setReminderTime(e.target.value)}
-            className="bg-transparent text-white text-lg font-retro focus:outline-none flex-1 [color-scheme:dark]"
+            className="bg-transparent text-white text-lg font-body focus:outline-none flex-1 [color-scheme:dark]"
           />
         </div>
       </motion.div>
@@ -216,8 +233,8 @@ export default function EditHabitPage() {
       {/* Importance / XP */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
         <div className="flex items-center justify-between mb-2">
-          <p className="font-pixel text-[8px] text-[#94a3b8]">⚡ DIFFICULTY</p>
-          <p className="font-pixel text-[8px] text-[#fbbf24]">{importance}/10 → +{Math.round(importance * 5)} XP</p>
+          <p className="font-heading text-xs text-slate-400">⚡ ระดับความยาก</p>
+          <p className="font-heading text-xs text-amber-400">{importance}/10 → +{Math.round(importance * 5)} XP</p>
         </div>
         <input
           type="range"
@@ -225,12 +242,12 @@ export default function EditHabitPage() {
           max={10}
           value={importance}
           onChange={(e) => setImportance(Number(e.target.value))}
-          className="w-full accent-[#8b5cf6] h-2"
+          className="w-full accent-purple-500 h-2"
         />
-        <div className="flex justify-between font-pixel text-[6px] text-[#475569] mt-1">
-          <span>EASY</span>
-          <span>MEDIUM</span>
-          <span>LEGENDARY</span>
+        <div className="flex justify-between font-body text-[10px] text-slate-500 mt-1">
+          <span>ง่าย</span>
+          <span>ปานกลาง</span>
+          <span>ตำนาน</span>
         </div>
       </motion.div>
 
@@ -238,29 +255,25 @@ export default function EditHabitPage() {
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }} className="space-y-3 pt-2">
         <button
           onClick={handleSave}
-          disabled={!name.trim()}
-          className="w-full pixel-btn bg-[#22c55e] hover:bg-[#16a34a] disabled:opacity-40 disabled:cursor-not-allowed text-white font-pixel text-sm py-3 tracking-wider transition-colors"
+          disabled={!name.trim() || saving}
+          className="w-full game-btn bg-gradient-to-b from-emerald-400 to-emerald-600 hover:from-emerald-300 hover:to-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-heading text-sm py-3 rounded-xl tracking-wider transition-all shadow-lg"
         >
-          💾 {isNew ? "CREATE QUEST" : "SAVE CHANGES"}
+          {saving ? "กำลังบันทึก..." : (isNew ? "💾 สร้างภารกิจ" : "💾 บันทึกการเปลี่ยนแปลง")}
         </button>
 
         {!isNew && (
           <div className="flex gap-3">
             <button
-              onClick={() => {
-                play("click");
-                updateHabit(habitId, { isActive: false, updatedAt: new Date().toISOString() });
-                router.push("/habits");
-              }}
-              className="flex-1 pixel-btn bg-[#1e1e3a] hover:bg-[#2a2a5a] text-[#94a3b8] font-pixel text-[9px] py-2"
+              onClick={handleArchive}
+              className="flex-1 game-btn bg-slate-700 hover:bg-slate-600 text-slate-300 font-heading text-xs py-2.5 rounded-xl"
             >
-              📦 ARCHIVE
+              📦 เก็บถาวร
             </button>
             <button
               onClick={() => { play("click"); setShowDeleteConfirm(true); }}
-              className="flex-1 pixel-btn bg-[#ef4444]/20 hover:bg-[#ef4444]/30 text-[#ef4444] font-pixel text-[9px] py-2"
+              className="flex-1 game-btn bg-red-500/20 hover:bg-red-500/30 text-red-400 font-heading text-xs py-2.5 rounded-xl"
             >
-              🗑 DELETE
+              🗑 ลบ
             </button>
           </div>
         )}
@@ -274,22 +287,22 @@ export default function EditHabitPage() {
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 px-6"
           onClick={() => setShowDeleteConfirm(false)}
         >
-          <div className="pixel-card p-5 max-w-xs w-full text-center space-y-3" onClick={(e) => e.stopPropagation()}>
+          <div className="game-card p-5 max-w-xs w-full text-center space-y-3 rounded-2xl" onClick={(e) => e.stopPropagation()}>
             <p className="text-3xl">⚠️</p>
-            <p className="font-pixel text-[10px] text-[#ef4444]">DELETE THIS QUEST?</p>
-            <p className="text-sm text-[#94a3b8]">ลบภารกิจนี้ถาวร ไม่สามารถกู้คืนได้!</p>
+            <p className="font-heading text-sm text-red-400">ลบภารกิจนี้?</p>
+            <p className="text-sm text-slate-400 font-body">ลบภารกิจนี้ถาวร ไม่สามารถกู้คืนได้!</p>
             <div className="flex gap-3">
               <button
                 onClick={() => { play("click"); setShowDeleteConfirm(false); }}
-                className="flex-1 pixel-btn bg-[#1e1e3a] text-[#94a3b8] font-pixel text-[9px] py-2"
+                className="flex-1 game-btn bg-slate-700 text-slate-300 font-heading text-xs py-2.5 rounded-xl"
               >
-                CANCEL
+                ยกเลิก
               </button>
               <button
                 onClick={handleDelete}
-                className="flex-1 pixel-btn bg-[#ef4444] text-white font-pixel text-[9px] py-2"
+                className="flex-1 game-btn bg-red-500 text-white font-heading text-xs py-2.5 rounded-xl"
               >
-                DELETE
+                ลบเลย
               </button>
             </div>
           </div>

@@ -80,6 +80,16 @@ export async function fetchHabits(userId: string) {
   return { data: data ?? [], error };
 }
 
+export async function fetchHabitById(habitId: string) {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("habits")
+    .select("*")
+    .eq("id", habitId)
+    .single();
+  return { data, error };
+}
+
 export async function createHabit(habit: HabitInsert) {
   const supabase = createClient();
   const { data, error } = await supabase
