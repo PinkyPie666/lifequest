@@ -2,56 +2,46 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { motion } from "framer-motion";
-import {
-  Home,
-  BarChart3,
-  Plus,
-  Trophy,
-  User,
-} from "lucide-react";
+import { useSoundEffect } from "@/hooks/useSoundEffect";
 import { cn } from "@/lib/utils";
-import { useTranslation } from "@/hooks/useTranslation";
 
 const NAV = [
-  { href: "/dashboard", icon: Home, labelKey: "home" },
-  { href: "/stats", icon: BarChart3, labelKey: "stats" },
-  { href: "/habits/new/edit", icon: Plus, labelKey: "add", isCenter: true },
-  { href: "/leaderboard", icon: Trophy, labelKey: "rank" },
-  { href: "/profile", icon: User, labelKey: "profile" },
+  { href: "/dashboard", emoji: "🏠", label: "BASE" },
+  { href: "/habits", emoji: "📋", label: "QUESTS" },
+  { href: "/habits/new/edit", emoji: "➕", label: "NEW", isCenter: true },
+  { href: "/stats", emoji: "📊", label: "STATS" },
+  { href: "/profile", emoji: "👤", label: "HERO" },
 ] as const;
-
-const LABELS: Record<string, Record<string, string>> = {
-  en: { home: "Home", stats: "Stats", add: "Add", rank: "Rank", profile: "Profile" },
-  th: { home: "หน้าหลัก", stats: "สถิติ", add: "เพิ่ม", rank: "อันดับ", profile: "โปรไฟล์" },
-};
 
 export function BottomNav() {
   const pathname = usePathname();
-  const { locale } = useTranslation();
-  const labels = LABELS[locale] || LABELS.en;
+  const { play } = useSoundEffect();
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 safe-bottom">
-      <div className="glass border-t border-white/10 px-2 pb-1 pt-2">
+      <div className="bg-[#0c0c1d]/95 border-t-2 border-[#2a2a5a] px-2 pb-1 pt-1 backdrop-blur-sm">
         <div className="flex items-center justify-around max-w-lg mx-auto">
           {NAV.map((item) => {
-            const Icon = item.icon;
             const isCenter = "isCenter" in item && item.isCenter;
-            const isActive = !isCenter && pathname.startsWith(item.href);
+            const isActive = !isCenter && (
+              item.href === "/dashboard"
+                ? pathname === "/dashboard"
+                : pathname.startsWith(item.href)
+            );
 
             if (isCenter) {
               return (
                 <Link
                   key={item.href}
                   href={item.href}
-                  className="relative flex flex-col items-center -mt-5"
+                  onClick={() => play("click")}
+                  className="relative flex flex-col items-center -mt-4"
                 >
-                  <div className="w-12 h-12 rounded-2xl gradient-primary shadow-lg shadow-quest-purple/30 flex items-center justify-center">
-                    <Plus className="h-6 w-6 text-white" />
+                  <div className="w-12 h-12 pixel-btn bg-[#8b5cf6] hover:bg-[#7c3aed] flex items-center justify-center text-xl transition-colors">
+                    {item.emoji}
                   </div>
-                  <span className="text-[10px] text-slate-400 mt-0.5">
-                    {labels[item.labelKey]}
+                  <span className="font-pixel text-[6px] text-[#94a3b8] mt-1">
+                    {item.label}
                   </span>
                 </Link>
               );
@@ -61,31 +51,27 @@ export function BottomNav() {
               <Link
                 key={item.href}
                 href={item.href}
-                className="relative flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-colors"
-              >
-                {isActive && (
-                  <motion.div
-                    layoutId="activeTab"
-                    className="absolute inset-0 bg-white/10 rounded-xl"
-                    transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                  />
+                onClick={() => play("navigate")}
+                className={cn(
+                  "relative flex flex-col items-center gap-0.5 px-3 py-1 transition-all active:scale-90",
+                  isActive ? "scale-105" : ""
                 )}
-                <Icon
-                  className={cn(
-                    "h-5 w-5 relative z-10 transition-colors",
-                    isActive ? "text-[#a78bfa]" : "text-slate-500"
-                  )}
-                />
-                <span
-                  className={cn(
-                    "text-[10px] relative z-10 transition-colors",
-                    isActive
-                      ? "text-[#a78bfa] font-medium"
-                      : "text-slate-500"
-                  )}
-                >
-                  {labels[item.labelKey]}
+              >
+                <span className={cn(
+                  "text-xl transition-all",
+                  isActive ? "animate-float-pixel" : "grayscale-[30%] opacity-60"
+                )}>
+                  {item.emoji}
                 </span>
+                <span className={cn(
+                  "font-pixel text-[6px] transition-colors",
+                  isActive ? "text-[#fbbf24]" : "text-[#475569]"
+                )}>
+                  {item.label}
+                </span>
+                {isActive && (
+                  <div className="absolute -bottom-0.5 w-4 h-[2px] bg-[#fbbf24]" />
+                )}
               </Link>
             );
           })}

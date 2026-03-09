@@ -1,12 +1,9 @@
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
 import "./globals.css";
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
-
 export const metadata: Metadata = {
-  title: "LifeQuest - Gamified Habit Tracker",
-  description: "Level up your life with gamified habit tracking. Build streaks, earn XP, and unlock achievements.",
+  title: "LifeQuest - RPG Habit Tracker",
+  description: "Turn your life into an RPG adventure. Complete quests, earn XP, level up your real life.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
@@ -19,7 +16,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#8b5cf6",
+  themeColor: "#0c0c1d",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
@@ -39,12 +36,8 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
       </head>
-      <body className={`${inter.variable} font-sans min-h-screen bg-[#0a0a0f] overflow-x-hidden`}>
+      <body className="font-retro min-h-screen bg-[#0c0c1d] text-[#e2e8f0] overflow-x-hidden">
         <div className="relative min-h-screen">
-          <div className="fixed inset-0 -z-10">
-            <div className="absolute top-0 left-1/4 w-96 h-96 bg-quest-purple/10 rounded-full blur-[128px]" />
-            <div className="absolute bottom-1/4 right-0 w-80 h-80 bg-quest-blue/10 rounded-full blur-[128px]" />
-          </div>
           {children}
         </div>
       </body>

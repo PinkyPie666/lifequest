@@ -4,23 +4,24 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center whitespace-nowrap rounded-xl text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 active:scale-[0.98]",
+  "inline-flex items-center justify-center whitespace-nowrap text-sm font-medium transition-all focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 font-retro tracking-wide pixel-btn",
   {
     variants: {
       variant: {
-        default: "gradient-primary text-white shadow-lg shadow-quest-purple/25 hover:shadow-quest-purple/40",
-        destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
-        outline: "border border-white/10 bg-white/5 hover:bg-white/10 hover:text-accent-foreground",
-        secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
-        ghost: "hover:bg-white/5 hover:text-accent-foreground",
-        link: "text-primary underline-offset-4 hover:underline",
-        glass: "glass hover:bg-white/10",
+        default: "bg-[#8b5cf6] hover:bg-[#7c3aed] text-white",
+        destructive: "bg-[#ef4444] hover:bg-[#dc2626] text-white",
+        outline: "bg-transparent border-[#2a2a5a] hover:bg-[#1e1e3a] text-[#94a3b8] hover:text-white",
+        secondary: "bg-[#1e1e3a] hover:bg-[#2a2a5a] text-[#e2e8f0]",
+        ghost: "hover:bg-white/5 text-[#94a3b8] hover:text-white border-transparent shadow-none",
+        link: "text-[#8b5cf6] underline-offset-4 hover:underline border-transparent shadow-none",
+        success: "bg-[#22c55e] hover:bg-[#16a34a] text-white",
+        gold: "bg-[#f59e0b] hover:bg-[#d97706] text-[#0c0c1d]",
       },
       size: {
         default: "h-11 px-6 py-2",
-        sm: "h-9 rounded-lg px-4",
-        lg: "h-12 rounded-xl px-8 text-base",
-        xl: "h-14 rounded-2xl px-10 text-lg",
+        sm: "h-9 px-4 text-xs",
+        lg: "h-12 px-8 text-lg",
+        xl: "h-14 px-10 text-xl",
         icon: "h-10 w-10",
       },
     },

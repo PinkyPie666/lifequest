@@ -1,194 +1,166 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { useTranslation } from "@/hooks/useTranslation";
+import { motion } from "framer-motion";
 import { useHabitStore } from "@/stores/useHabitStore";
-import { Plus, Search, Filter, Settings, Flame, Bell, BellOff, GripVertical } from "lucide-react";
+import { useSoundEffect } from "@/hooks/useSoundEffect";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 
 const CATEGORIES = [
-  { id: "all", label: "All" },
-  { id: "health", label: "Health", color: "#ef4444" },
-  { id: "mental", label: "Mental", color: "#a78bfa" },
-  { id: "finance", label: "Finance", color: "#34d399" },
-  { id: "learning", label: "Learning", color: "#f59e0b" },
-  { id: "work", label: "Work", color: "#60a5fa" },
+  { id: "all", label: "ALL", emoji: "📋" },
+  { id: "health", label: "HEALTH", emoji: "❤️" },
+  { id: "mental", label: "MIND", emoji: "🧠" },
+  { id: "finance", label: "MONEY", emoji: "💰" },
+  { id: "learning", label: "LEARN", emoji: "📚" },
+  { id: "work", label: "WORK", emoji: "💼" },
 ];
 
 export default function HabitsPage() {
-  const { t } = useTranslation();
-  const { habits } = useHabitStore();
-  const [completedIds, setCompletedIds] = useState<string[]>([]);
-  const [search, setSearch] = useState("");
-  const [activeFilter, setActiveFilter] = useState<string>("all");
-  const [showSearch, setShowSearch] = useState(false);
-
-  const handleComplete = useCallback((habitId: string) => {
-    setCompletedIds((prev) =>
-      prev.includes(habitId) ? prev.filter((id) => id !== habitId) : [...prev, habitId]
-    );
-  }, []);
+  const { habits, removeHabit } = useHabitStore();
+  const { play } = useSoundEffect();
+  const [activeFilter, setActiveFilter] = useState("all");
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const activeHabits = habits.filter((h) => h.isActive);
-  const sortedHabits = [...activeHabits].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+  const filteredHabits = activeHabits.filter((h) => activeFilter === "all" || h.category === activeFilter);
 
-  const filteredHabits = sortedHabits.filter((h) => {
-    const matchesSearch = h.name.toLowerCase().includes(search.toLowerCase());
-    const matchesFilter = activeFilter === "all" || h.category === activeFilter;
-    return matchesSearch && matchesFilter;
-  });
+  const handleDelete = useCallback(() => {
+    if (deleteId) {
+      play("error");
+      removeHabit(deleteId);
+      setDeleteId(null);
+    }
+  }, [deleteId, removeHabit, play]);
 
   return (
-    <div className="px-4 pt-12 pb-28 safe-top space-y-4">
+    <div className="px-4 pt-6 pb-28 safe-top space-y-4">
+      <div className="fixed inset-0 scanline pointer-events-none z-10" />
+
+      {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         className="flex items-center justify-between"
       >
-        <h1 className="text-2xl font-bold text-white">{t.habits.myHabits}</h1>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setShowSearch(!showSearch)}
+        <h1 className="font-pixel text-[13px] text-[#fbbf24] retro-text-shadow">📋 QUEST LOG</h1>
+        <Link
+          href="/habits/new/edit"
+          onClick={() => play("click")}
+          className="font-pixel text-[8px] text-white pixel-btn bg-[#8b5cf6] hover:bg-[#7c3aed] px-3 py-1"
         >
-          <Search className="h-5 w-5" />
-        </Button>
+          + NEW QUEST
+        </Link>
       </motion.div>
 
-      <AnimatePresence>
-        {showSearch && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-          >
-            <Input
-              placeholder={t.habits.searchHabits}
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="mb-2"
-            />
-          </motion.div>
-        )}
-      </AnimatePresence>
-
+      {/* Category Filters */}
       <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-1">
         {CATEGORIES.map((cat) => (
           <button
             key={cat.id}
-            onClick={() => setActiveFilter(cat.id)}
+            onClick={() => { play("click"); setActiveFilter(cat.id); }}
             className={cn(
-              "px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all flex-shrink-0",
+              "pixel-card px-3 py-1.5 font-pixel text-[7px] whitespace-nowrap transition-all flex-shrink-0 flex items-center gap-1",
               activeFilter === cat.id
-                ? cat.id === "all"
-                  ? "gradient-primary text-white"
-                  : "text-white"
-                : "bg-white/5 text-slate-400 hover:bg-white/10"
+                ? "border-[#fbbf24] bg-[#fbbf24]/10 text-[#fbbf24]"
+                : "text-[#475569] hover:text-[#94a3b8]"
             )}
-            style={
-              activeFilter === cat.id && cat.id !== "all"
-                ? { backgroundColor: cat.color }
-                : undefined
-            }
           >
-            {cat.id === "all" && <Filter className="h-3 w-3 inline mr-1" />}
+            <span>{cat.emoji}</span>
             {cat.label}
           </button>
         ))}
       </div>
 
+      {/* Habit List */}
       <div className="space-y-2">
         {filteredHabits.length > 0 ? (
-          filteredHabits.map((habit, i) => {
-            const isCompleted = completedIds.includes(habit.id);
-            return (
-              <motion.div
-                key={habit.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.04 }}
-                className={cn(
-                  "glass-card p-4 flex items-center gap-3 transition-all",
-                  isCompleted && "opacity-60"
-                )}
-              >
-                <GripVertical className="h-4 w-4 text-slate-600 flex-shrink-0 cursor-grab" />
+          filteredHabits.map((habit, i) => (
+            <motion.div
+              key={habit.id}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: i * 0.04 }}
+              className="pixel-card p-3 flex items-center gap-3"
+            >
+              <div className="text-2xl flex-shrink-0">{habit.emoji || "📌"}</div>
 
-                <motion.button
-                  whileTap={{ scale: 0.85 }}
-                  onClick={() => handleComplete(habit.id)}
-                  className={cn(
-                    "flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center text-lg transition-all",
-                    isCompleted
-                      ? "bg-emerald-500/20 border border-emerald-500/30"
-                      : "bg-white/5 border border-white/10"
+              <div className="flex-1 min-w-0">
+                <p className="text-sm text-white truncate">{habit.name}</p>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <span className="font-pixel text-[7px] text-[#8b5cf6]">+{habit.xpReward || 15} XP</span>
+                  {habit.reminderTime && (
+                    <span className="font-pixel text-[7px] text-[#475569]">⏰ {habit.reminderTime}</span>
                   )}
-                >
-                  {isCompleted ? "✅" : (habit.emoji || habit.icon)}
-                </motion.button>
-
-                <div className="flex-1 min-w-0">
-                  <p className={cn(
-                    "text-sm font-medium text-white truncate",
-                    isCompleted && "line-through text-slate-500"
-                  )}>
-                    {habit.name}
-                  </p>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    {habit.reminderTime && (
-                      <span className="text-[11px] text-slate-400">⏰ {habit.reminderTime}</span>
-                    )}
-                    {habit.reminderEnabled !== undefined && (
-                      habit.reminderEnabled
-                        ? <Bell className="h-3 w-3 text-[#a78bfa]" />
-                        : <BellOff className="h-3 w-3 text-slate-600" />
-                    )}
-                    {habit.currentStreak > 0 && (
-                      <span className="flex items-center gap-0.5 text-[11px] text-orange-400">
-                        <Flame className="h-3 w-3" />
-                        {habit.currentStreak}d
-                      </span>
-                    )}
-                  </div>
+                  {habit.currentStreak > 0 && (
+                    <span className="font-pixel text-[7px] text-orange-400">🔥{habit.currentStreak}</span>
+                  )}
                 </div>
+              </div>
 
+              <div className="flex gap-1 flex-shrink-0">
                 <Link
                   href={`/habits/${habit.id}/edit`}
-                  className="flex-shrink-0 w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors"
+                  onClick={() => play("click")}
+                  className="w-8 h-8 flex items-center justify-center border-2 border-[#2a2a5a] bg-[#0c0c1d] hover:bg-[#1e1e3a] text-xs transition-colors"
                 >
-                  <Settings className="h-3.5 w-3.5 text-slate-400" />
+                  ✏️
                 </Link>
-              </motion.div>
-            );
-          })
+                <button
+                  onClick={() => { play("click"); setDeleteId(habit.id); }}
+                  className="w-8 h-8 flex items-center justify-center border-2 border-[#2a2a5a] bg-[#0c0c1d] hover:bg-[#ef4444]/20 text-xs transition-colors"
+                >
+                  🗑️
+                </button>
+              </div>
+            </motion.div>
+          ))
         ) : (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="text-center py-16"
-          >
-            <p className="text-5xl mb-4">🎯</p>
-            <p className="text-sm text-slate-400 mb-4">{t.habits.noHabitsFound}</p>
-            <Link href="/onboarding/setup">
-              <Button size="sm" variant="outline">
-                {t.onboarding.setupTitle}
-              </Button>
+          <div className="pixel-card p-10 text-center">
+            <p className="text-5xl mb-3 animate-float-pixel">🗡️</p>
+            <p className="font-pixel text-[10px] text-[#94a3b8] mb-2">NO QUESTS FOUND</p>
+            <p className="text-sm text-[#475569] mb-4">สร้างภารกิจแรกของคุณ!</p>
+            <Link href="/habits/new/edit">
+              <button
+                onClick={() => play("click")}
+                className="pixel-btn bg-[#8b5cf6] hover:bg-[#7c3aed] text-white font-pixel text-[9px] py-2 px-6"
+              >
+                CREATE QUEST
+              </button>
             </Link>
-          </motion.div>
+          </div>
         )}
       </div>
 
-      {/* FAB Button */}
-      <Link
-        href="/habits/new/edit"
-        className="fixed bottom-20 right-4 z-40 w-14 h-14 rounded-2xl gradient-primary shadow-lg shadow-quest-purple/30 flex items-center justify-center hover:scale-105 active:scale-95 transition-transform"
-      >
-        <Plus className="h-6 w-6 text-white" />
-      </Link>
+      {/* Stats Summary */}
+      {activeHabits.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.3 }}
+          className="pixel-card p-3"
+        >
+          <div className="flex items-center justify-between">
+            <span className="font-pixel text-[7px] text-[#94a3b8]">ACTIVE QUESTS</span>
+            <span className="font-pixel text-[8px] text-[#fbbf24]">{activeHabits.length}</span>
+          </div>
+        </motion.div>
+      )}
+
+      {/* Delete Confirm */}
+      {deleteId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 px-4" onClick={() => setDeleteId(null)}>
+          <div className="pixel-card p-5 w-full max-w-xs text-center space-y-3" onClick={(e) => e.stopPropagation()}>
+            <p className="text-3xl">🗑️</p>
+            <p className="font-pixel text-[10px] text-[#ef4444]">DELETE QUEST?</p>
+            <p className="text-sm text-[#94a3b8]">ลบภารกิจนี้ถาวร?</p>
+            <div className="flex gap-3">
+              <button onClick={() => { play("click"); setDeleteId(null); }} className="flex-1 pixel-btn bg-[#1e1e3a] text-[#94a3b8] font-pixel text-[9px] py-2">CANCEL</button>
+              <button onClick={handleDelete} className="flex-1 pixel-btn bg-[#ef4444] text-white font-pixel text-[9px] py-2">DELETE</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
