@@ -2,157 +2,194 @@
 
 import { useState, useCallback, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useUserStore } from "@/stores/useUserStore";
-import { useHabitStore } from "@/stores/useHabitStore";
 import { useSoundEffect } from "@/hooks/useSoundEffect";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { getCurrentUser, fetchHabits, fetchTodayLogs, checkInHabit, getProfile } from "@/lib/supabase/api";
+import type { HabitRow, HabitLog, Profile } from "@/types/database";
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { user, addXp, addCoins, checkStreak, updateProfile } = useUserStore();
-  const { habits } = useHabitStore();
   const { play } = useSoundEffect();
-  const [completedIds, setCompletedIds] = useState<string[]>([]);
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [habits, setHabits] = useState<HabitRow[]>([]);
+  const [todayLogs, setTodayLogs] = useState<HabitLog[]>([]);
   const [xpAnimations, setXpAnimations] = useState<{ id: string; xp: number; key: number }[]>([]);
   const [showCelebration, setShowCelebration] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user || !user.onboardingCompleted) {
-      router.replace("/");
-      return;
+    async function loadData() {
+      const user = await getCurrentUser();
+      if (!user) {
+        router.replace("/login");
+        return;
+      }
+      const [profileRes, habitsRes, logsRes] = await Promise.all([
+        getProfile(user.id),
+        fetchHabits(user.id),
+        fetchTodayLogs(user.id),
+      ]);
+      if (profileRes.data) setProfile(profileRes.data);
+      setHabits(habitsRes.data);
+      setTodayLogs(logsRes.data);
+      setLoading(false);
     }
-    checkStreak();
-  }, [user, router, checkStreak]);
+    loadData();
+  }, [router]);
 
-  const activeHabits = useMemo(
-    () => habits.filter((h) => h.isActive).sort((a, b) => {
-      const timeA = a.reminderTime || "99:99";
-      const timeB = b.reminderTime || "99:99";
-      return timeA.localeCompare(timeB);
-    }),
-    [habits]
+  const completedIds = useMemo(
+    () => todayLogs.filter((l) => l.is_completed).map((l) => l.habit_id),
+    [todayLogs]
   );
 
-  const totalToday = activeHabits.length;
+  // Sort: uncompleted first (by reminder_time), then completed at bottom
+  const sortedHabits = useMemo(() => {
+    const uncompleted = habits
+      .filter((h) => !completedIds.includes(h.id))
+      .sort((a, b) => (a.reminder_time || "99:99").localeCompare(b.reminder_time || "99:99"));
+    const completed = habits
+      .filter((h) => completedIds.includes(h.id))
+      .sort((a, b) => (a.reminder_time || "99:99").localeCompare(b.reminder_time || "99:99"));
+    return [...uncompleted, ...completed];
+  }, [habits, completedIds]);
+
+  const totalToday = habits.length;
   const completedToday = completedIds.length;
   const progressPct = totalToday > 0 ? Math.round((completedToday / totalToday) * 100) : 0;
 
-  const xpForNext = user ? (user.level * user.level * 100) : 100;
-  const xpProgress = user ? Math.min(100, Math.round((user.totalXp / xpForNext) * 100)) : 0;
+  const xpForNext = profile ? (profile.level * profile.level * 100) : 100;
+  const xpProgress = profile ? Math.min(100, Math.round((profile.total_xp / xpForNext) * 100)) : 0;
 
-  const handleComplete = useCallback((habitId: string) => {
-    if (completedIds.includes(habitId)) return;
-    const habit = activeHabits.find((h) => h.id === habitId);
-    const xp = habit?.xpReward || 15;
+  const handleComplete = useCallback(async (habitId: string) => {
+    if (completedIds.includes(habitId) || !profile) return;
+    const habit = habits.find((h) => h.id === habitId);
+    const xp = habit?.importance ? habit.importance * 10 + 5 : 15;
 
     play("complete");
-    setCompletedIds((prev) => [...prev, habitId]);
     setXpAnimations((prev) => [...prev, { id: habitId, xp, key: Date.now() }]);
-    addXp(xp);
-    addCoins(Math.floor(xp / 3));
-    updateProfile({ totalCompletions: (user?.totalCompletions || 0) + 1 });
 
     if (typeof navigator !== "undefined" && navigator.vibrate) {
       navigator.vibrate(50);
+    }
+
+    const { data } = await checkInHabit(habitId, profile.id, xp);
+    if (data) {
+      setTodayLogs((prev) => [...prev.filter((l) => l.habit_id !== habitId), data]);
+      // Refresh profile for updated XP
+      const profileRes = await getProfile(profile.id);
+      if (profileRes.data) setProfile(profileRes.data);
     }
 
     if (completedIds.length + 1 >= totalToday && totalToday > 0) {
       setTimeout(() => {
         play("levelup");
         setShowCelebration(true);
-        updateProfile({ perfectDays: (user?.perfectDays || 0) + 1 });
       }, 600);
     }
-  }, [completedIds, activeHabits, totalToday, play, addXp, addCoins, updateProfile, user]);
+  }, [completedIds, habits, totalToday, play, profile]);
 
   const hour = new Date().getHours();
-  const greeting = hour < 12 ? "Good Morning" : hour < 17 ? "Good Afternoon" : hour < 21 ? "Good Evening" : "Good Night";
+  const greeting = hour < 12 ? "สวัสดีตอนเช้า" : hour < 17 ? "สวัสดีตอนบ่าย" : hour < 21 ? "สวัสดีตอนเย็น" : "ราตรีสวัสดิ์";
 
-  if (!user) return null;
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="text-4xl mb-3 animate-float">⚔️</div>
+          <p className="font-game text-sm text-[#94a3b8]">กำลังโหลด...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!profile) return null;
 
   return (
     <div className="px-4 pt-6 pb-28 safe-top space-y-4">
-      <div className="fixed inset-0 scanline pointer-events-none z-10" />
 
       {/* ─── Player HUD Header ─────────────── */}
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="pixel-card p-4"
+        className="game-card p-4"
       >
         <div className="flex items-center gap-3 mb-3">
-          <div className="text-3xl animate-float-pixel">{user.avatarEmoji}</div>
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#8b5cf6]/30 to-[#6366f1]/30 flex items-center justify-center text-2xl border border-[#8b5cf6]/30">
+            {profile.avatar_url ? (
+              <img src={profile.avatar_url} alt="" className="w-10 h-10 rounded-lg object-cover" />
+            ) : "⚔️"}
+          </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
-              <p className="font-pixel text-sm text-white truncate">{user.displayName}</p>
-              <span className="font-pixel text-[8px] text-[#fbbf24] bg-[#fbbf24]/10 px-2 py-0.5">
-                Lv.{user.level}
+              <p className="font-heading text-base text-white truncate">{profile.username || profile.full_name || "นักผจญภัย"}</p>
+              <span className="font-game text-xs text-[#fbbf24] bg-[#fbbf24]/10 px-2 py-0.5 rounded-md">
+                Lv.{profile.level}
               </span>
             </div>
             <p className="text-sm text-[#94a3b8]">{greeting} 👋</p>
           </div>
-          <div className="text-right flex-shrink-0">
-            <div className="flex items-center gap-1">
-              <span className="text-sm">🪙</span>
-              <span className="font-pixel text-[10px] text-[#fbbf24]">{user.coins}</span>
-            </div>
-            <div className="flex items-center gap-1">
+          <div className="text-right flex-shrink-0 space-y-0.5">
+            <div className="flex items-center gap-1 justify-end">
               <span className="text-sm">🔥</span>
-              <span className="font-pixel text-[10px] text-orange-400">{user.streakDays}</span>
+              <span className="font-game text-sm text-orange-400">{profile.current_streak}</span>
             </div>
           </div>
         </div>
 
         {/* HP / MP / XP Bars */}
-        <div className="space-y-1.5">
+        <div className="space-y-2">
           <div className="flex items-center gap-2">
-            <span className="font-pixel text-[7px] text-[#ef4444] w-6">HP</span>
-            <div className="flex-1 h-3 bg-[#1a1a3a] border border-[#2a2a5a]">
-              <div className="hp-bar h-full transition-all" style={{ width: `${Math.round((user.hp / user.maxHp) * 100)}%` }} />
+            <span className="font-game text-xs text-[#ef4444] w-7">HP</span>
+            <div className="flex-1 bar-track h-3.5">
+              <div className="hp-bar h-full transition-all duration-500" style={{ width: "100%" }} />
             </div>
-            <span className="font-pixel text-[7px] text-[#94a3b8] w-12 text-right">{user.hp}/{user.maxHp}</span>
+            <span className="font-game text-xs text-[#94a3b8] w-16 text-right">100/100</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="font-pixel text-[7px] text-[#3b82f6] w-6">MP</span>
-            <div className="flex-1 h-3 bg-[#1a1a3a] border border-[#2a2a5a]">
-              <div className="mp-bar h-full transition-all" style={{ width: `${Math.round((user.mp / user.maxMp) * 100)}%` }} />
+            <span className="font-game text-xs text-[#3b82f6] w-7">MP</span>
+            <div className="flex-1 bar-track h-3.5">
+              <div className="mp-bar h-full transition-all duration-500" style={{ width: "100%" }} />
             </div>
-            <span className="font-pixel text-[7px] text-[#94a3b8] w-12 text-right">{user.mp}/{user.maxMp}</span>
+            <span className="font-game text-xs text-[#94a3b8] w-16 text-right">50/50</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="font-pixel text-[7px] text-[#fbbf24] w-6">XP</span>
-            <div className="flex-1 h-3 bg-[#1a1a3a] border border-[#2a2a5a]">
-              <div className="xp-bar h-full transition-all" style={{ width: `${xpProgress}%` }} />
+            <span className="font-game text-xs text-[#fbbf24] w-7">XP</span>
+            <div className="flex-1 bar-track h-3.5">
+              <div className="xp-bar h-full transition-all duration-500" style={{ width: `${xpProgress}%` }} />
             </div>
-            <span className="font-pixel text-[7px] text-[#94a3b8] w-12 text-right">{user.totalXp}/{xpForNext}</span>
+            <span className="font-game text-xs text-[#94a3b8] w-16 text-right">{profile.total_xp}/{xpForNext}</span>
           </div>
         </div>
       </motion.div>
 
-      {/* ─── Quick Stats ───────────────────── */}
+      {/* ─── Quest Progress (replaces streak/today/xp cards) ─── */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="grid grid-cols-3 gap-2"
+        className="game-card p-4"
       >
-        <div className="pixel-card p-3 text-center">
-          <p className="text-xl mb-1">🔥</p>
-          <p className="font-pixel text-sm text-white">{user.streakDays}</p>
-          <p className="font-pixel text-[6px] text-[#94a3b8]">STREAK</p>
+        <div className="flex items-center justify-between mb-2">
+          <span className="font-game text-sm text-[#fbbf24]">� Quest Progress</span>
+          <span className="font-game text-sm text-white">{completedToday}/{totalToday}</span>
         </div>
-        <div className="pixel-card p-3 text-center">
-          <p className="text-xl mb-1">🎯</p>
-          <p className="font-pixel text-sm text-white">{progressPct}%</p>
-          <p className="font-pixel text-[6px] text-[#94a3b8]">TODAY</p>
+        <div className="bar-track h-5">
+          <motion.div
+            className="xp-bar h-full flex items-center justify-center"
+            initial={{ width: 0 }}
+            animate={{ width: `${progressPct}%` }}
+            transition={{ duration: 0.6 }}
+          >
+            {progressPct > 15 && (
+              <span className="font-game text-xs text-[#1a1a2e]">{progressPct}%</span>
+            )}
+          </motion.div>
         </div>
-        <div className="pixel-card p-3 text-center">
-          <p className="text-xl mb-1">⚡</p>
-          <p className="font-pixel text-sm text-white">{user.totalXp}</p>
-          <p className="font-pixel text-[6px] text-[#94a3b8]">TOTAL XP</p>
-        </div>
+        {progressPct === 100 && (
+          <p className="text-center text-sm text-[#22c55e] font-game mt-1.5">🎉 ภารกิจวันนี้ครบแล้ว!</p>
+        )}
       </motion.div>
 
       {/* ─── Today's Quests ────────────────── */}
@@ -162,140 +199,128 @@ export default function DashboardPage() {
         transition={{ delay: 0.2 }}
       >
         <div className="flex items-center justify-between mb-3">
-          <h2 className="font-pixel text-[11px] text-[#fbbf24] retro-text-shadow">
-            📋 TODAY&apos;S QUESTS
+          <h2 className="font-heading text-base text-white">
+            ⚔️ Today&apos;s Quests
           </h2>
           <Link
             href="/habits/new/edit"
-            className="font-pixel text-[8px] text-[#8b5cf6] hover:text-[#a78bfa] transition-colors"
+            className="game-btn game-btn-primary px-3 py-1.5 text-xs font-game"
             onClick={() => play("click")}
           >
-            + ADD
+            + เพิ่ม
           </Link>
         </div>
 
-        {activeHabits.length === 0 ? (
-          <div className="pixel-card p-8 text-center">
-            <p className="text-4xl mb-3 animate-float-pixel">🗡️</p>
-            <p className="font-pixel text-[10px] text-[#94a3b8] mb-4">NO QUESTS YET</p>
-            <p className="text-sm text-[#475569] mb-4">สร้างภารกิจแรกของคุณ!</p>
+        {habits.length === 0 ? (
+          <div className="game-card p-8 text-center">
+            <p className="text-4xl mb-3 animate-float">🗡️</p>
+            <p className="font-game text-sm text-[#94a3b8] mb-4">ยังไม่มีภารกิจ</p>
+            <p className="text-sm text-[#475569] mb-4">สร้างภารกิจแรกของคุณเลย!</p>
             <Link href="/habits/new/edit">
               <button
                 onClick={() => play("click")}
-                className="pixel-btn bg-[#8b5cf6] hover:bg-[#7c3aed] text-white font-pixel text-[10px] py-2 px-6 tracking-wider"
+                className="game-btn game-btn-primary px-6 py-2.5 text-sm font-game"
               >
-                CREATE QUEST
+                สร้างภารกิจใหม่
               </button>
             </Link>
           </div>
         ) : (
           <div className="space-y-2">
-            {activeHabits.map((habit, i) => {
-              const isCompleted = completedIds.includes(habit.id);
-              const xp = habit.xpReward || 15;
-              return (
-                <motion.div
-                  key={habit.id}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: i * 0.05 }}
-                >
-                  <button
-                    onClick={() => handleComplete(habit.id)}
-                    disabled={isCompleted}
-                    className={cn(
-                      "pixel-card p-3 w-full text-left relative overflow-hidden transition-all",
-                      isCompleted
-                        ? "opacity-50 border-[#22c55e]/30"
-                        : "hover:bg-[#1a1a3a] active:translate-x-1 active:translate-y-1"
-                    )}
+            <AnimatePresence mode="popLayout">
+              {sortedHabits.map((habit, i) => {
+                const isCompleted = completedIds.includes(habit.id);
+                const xp = habit.importance ? habit.importance * 10 + 5 : 15;
+                return (
+                  <motion.div
+                    key={habit.id}
+                    layout
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 20 }}
+                    transition={{ delay: i * 0.03, layout: { duration: 0.3 } }}
                   >
-                    <div className="flex items-center gap-3">
-                      <div className={cn(
-                        "w-8 h-8 flex items-center justify-center text-lg border-2 transition-all flex-shrink-0",
+                    <button
+                      onClick={() => handleComplete(habit.id)}
+                      disabled={isCompleted}
+                      className={cn(
+                        "game-card p-3.5 w-full text-left relative overflow-hidden transition-all",
                         isCompleted
-                          ? "border-[#22c55e] bg-[#22c55e]/20"
-                          : "border-[#2a2a5a] bg-[#0c0c1d]"
-                      )}>
-                        {isCompleted ? (
-                          <motion.span
-                            initial={{ scale: 0 }}
-                            animate={{ scale: 1 }}
-                            transition={{ type: "spring", bounce: 0.6 }}
-                            className="text-[#22c55e] font-pixel text-[10px]"
-                          >
-                            ✓
-                          </motion.span>
-                        ) : (
-                          <span>{habit.emoji || "📌"}</span>
-                        )}
-                      </div>
-
-                      <div className="flex-1 min-w-0">
-                        <p className={cn(
-                          "text-sm font-retro truncate",
-                          isCompleted ? "line-through text-[#475569]" : "text-white"
+                          ? "opacity-50 border-[#22c55e]/20"
+                          : "hover:border-[#8b5cf6]/40 active:scale-[0.98]"
+                      )}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={cn(
+                          "w-10 h-10 rounded-xl flex items-center justify-center text-lg transition-all flex-shrink-0",
+                          isCompleted
+                            ? "bg-[#22c55e]/20 border border-[#22c55e]/40"
+                            : "bg-[#1a1a3a] border border-[#2a2a5a]"
                         )}>
-                          {habit.name}
-                        </p>
-                        <p className={cn(
-                          "font-pixel text-[7px]",
-                          isCompleted ? "text-[#22c55e]" : "text-[#8b5cf6]"
-                        )}>
-                          {isCompleted ? `+${xp} XP EARNED` : `+${xp} XP`}
-                        </p>
+                          {isCompleted ? (
+                            <motion.span
+                              initial={{ scale: 0 }}
+                              animate={{ scale: 1 }}
+                              transition={{ type: "spring", bounce: 0.6 }}
+                              className="text-[#22c55e] text-base"
+                            >
+                              ✓
+                            </motion.span>
+                          ) : (
+                            <span>{habit.emoji || "📌"}</span>
+                          )}
+                        </div>
+
+                        <div className="flex-1 min-w-0">
+                          <p className={cn(
+                            "text-sm font-game truncate",
+                            isCompleted ? "line-through text-[#475569]" : "text-white"
+                          )}>
+                            {habit.name}
+                          </p>
+                          <p className={cn(
+                            "font-game text-xs",
+                            isCompleted ? "text-[#22c55e]" : "text-[#8b5cf6]"
+                          )}>
+                            {isCompleted ? `+${xp} XP Earned` : `+${xp} XP`}
+                          </p>
+                        </div>
+
+                        <div className="flex flex-col items-end flex-shrink-0 gap-0.5">
+                          {habit.reminder_time && (
+                            <span className="font-game text-xs text-[#475569]">{habit.reminder_time}</span>
+                          )}
+                          {habit.current_streak > 0 && (
+                            <span className="font-game text-xs text-orange-400">🔥{habit.current_streak}</span>
+                          )}
+                        </div>
                       </div>
 
-                      <div className="flex flex-col items-end flex-shrink-0 gap-0.5">
-                        {habit.reminderTime && (
-                          <span className="font-pixel text-[7px] text-[#475569]">{habit.reminderTime}</span>
-                        )}
-                        {habit.currentStreak > 0 && (
-                          <span className="font-pixel text-[7px] text-orange-400">🔥{habit.currentStreak}</span>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* XP float animation */}
-                    <AnimatePresence>
-                      {xpAnimations
-                        .filter((a) => a.id === habit.id)
-                        .map((a) => (
-                          <motion.div
-                            key={a.key}
-                            initial={{ opacity: 1, y: 0 }}
-                            animate={{ opacity: 0, y: -30 }}
-                            exit={{ opacity: 0 }}
-                            transition={{ duration: 0.8 }}
-                            className="absolute top-1 right-3 font-pixel text-[10px] text-[#fbbf24] pointer-events-none retro-text-shadow"
-                            onAnimationComplete={() =>
-                              setXpAnimations((prev) => prev.filter((x) => x.key !== a.key))
-                            }
-                          >
-                            +{a.xp} XP ⭐
-                          </motion.div>
-                        ))}
-                    </AnimatePresence>
-                  </button>
-                </motion.div>
-              );
-            })}
-
-            {/* Progress bar */}
-            <div className="pixel-card p-3">
-              <div className="flex items-center justify-between mb-1">
-                <span className="font-pixel text-[7px] text-[#94a3b8]">QUEST PROGRESS</span>
-                <span className="font-pixel text-[7px] text-[#fbbf24]">{completedToday}/{totalToday}</span>
-              </div>
-              <div className="h-4 bg-[#1a1a3a] border border-[#2a2a5a]">
-                <motion.div
-                  className="xp-bar h-full"
-                  initial={{ width: 0 }}
-                  animate={{ width: `${progressPct}%` }}
-                  transition={{ duration: 0.5 }}
-                />
-              </div>
-            </div>
+                      {/* XP float animation */}
+                      <AnimatePresence>
+                        {xpAnimations
+                          .filter((a) => a.id === habit.id)
+                          .map((a) => (
+                            <motion.div
+                              key={a.key}
+                              initial={{ opacity: 1, y: 0 }}
+                              animate={{ opacity: 0, y: -30 }}
+                              exit={{ opacity: 0 }}
+                              transition={{ duration: 0.8 }}
+                              className="absolute top-1 right-3 font-game text-sm text-[#fbbf24] pointer-events-none"
+                              onAnimationComplete={() =>
+                                setXpAnimations((prev) => prev.filter((x) => x.key !== a.key))
+                              }
+                            >
+                              +{a.xp} XP ⭐
+                            </motion.div>
+                          ))}
+                      </AnimatePresence>
+                    </button>
+                  </motion.div>
+                );
+              })}
+            </AnimatePresence>
           </div>
         )}
       </motion.div>
@@ -313,7 +338,7 @@ export default function DashboardPage() {
               initial={{ scale: 0.5, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.5, opacity: 0 }}
-              className="pixel-card p-8 max-w-sm w-full text-center space-y-4"
+              className="game-card p-8 max-w-sm w-full text-center space-y-4"
             >
               <motion.p
                 initial={{ scale: 0, rotate: -180 }}
@@ -321,25 +346,25 @@ export default function DashboardPage() {
                 transition={{ type: "spring", bounce: 0.6, delay: 0.2 }}
                 className="text-6xl"
               >
-                �
+                🏆
               </motion.p>
-              <h2 className="font-pixel text-lg text-[#fbbf24] retro-glow">PERFECT DAY!</h2>
-              <p className="font-pixel text-[10px] text-[#8b5cf6]">⭐ +50 BONUS XP</p>
-              <p className="text-sm text-orange-400">🔥 Streak: {user.streakDays + 1} วัน</p>
+              <h2 className="font-heading text-2xl text-[#fbbf24] retro-glow">Perfect Day!</h2>
+              <p className="font-game text-sm text-[#8b5cf6]">⭐ +50 Bonus XP</p>
+              <p className="text-sm text-orange-400">🔥 Streak: {(profile?.current_streak || 0) + 1} วัน</p>
               <div className="flex gap-3 pt-2">
                 <Link href="/stats" className="flex-1">
                   <button
                     onClick={() => { play("click"); setShowCelebration(false); }}
-                    className="w-full pixel-btn bg-[#1e1e3a] hover:bg-[#2a2a5a] text-[#94a3b8] font-pixel text-[9px] py-2"
+                    className="w-full game-btn game-btn-secondary py-2.5 text-sm font-game"
                   >
-                    VIEW STATS
+                    ดูสถิติ
                   </button>
                 </Link>
                 <button
                   onClick={() => { play("click"); setShowCelebration(false); }}
-                  className="flex-1 pixel-btn bg-[#8b5cf6] hover:bg-[#7c3aed] text-white font-pixel text-[9px] py-2"
+                  className="flex-1 game-btn game-btn-primary py-2.5 text-sm font-game"
                 >
-                  CONTINUE
+                  ดำเนินการต่อ
                 </button>
               </div>
             </motion.div>

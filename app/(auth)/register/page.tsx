@@ -1,153 +1,165 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { useUserStore } from "@/stores/useUserStore";
 import { useSoundEffect } from "@/hooks/useSoundEffect";
+import { signInWithGoogle, signUpWithEmail } from "@/lib/supabase/api";
 import Link from "next/link";
-
-const CLASS_OPTIONS = [
-  { id: "warrior" as const, emoji: "⚔️", name: "Warrior", nameTh: "นักรบ", desc: "Strong & disciplined" },
-  { id: "mage" as const, emoji: "🧙", name: "Mage", nameTh: "จอมเวท", desc: "Wise & focused" },
-  { id: "ranger" as const, emoji: "🏹", name: "Ranger", nameTh: "พราน", desc: "Agile & adaptable" },
-  { id: "healer" as const, emoji: "💚", name: "Healer", nameTh: "นักบำบัด", desc: "Caring & balanced" },
-];
 
 export default function RegisterPage() {
   const router = useRouter();
-  const { createUser, updateProfile } = useUserStore();
   const { play } = useSoundEffect();
-  const [step, setStep] = useState(1);
-  const [name, setName] = useState("");
-  const [selectedClass, setSelectedClass] = useState<"warrior" | "mage" | "ranger" | "healer">("warrior");
+  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleNext = useCallback(() => {
-    if (!name.trim()) return;
+  const handleGoogleRegister = async () => {
     play("click");
-    setStep(2);
-  }, [name, play]);
+    setLoading(true);
+    setError("");
+    const { error: err } = await signInWithGoogle();
+    if (err) {
+      setError(err.message);
+      setLoading(false);
+    }
+  };
 
-  const handleCreate = useCallback(() => {
-    play("levelup");
-    createUser(name.trim());
-    updateProfile({ classType: selectedClass, avatarEmoji: CLASS_OPTIONS.find(c => c.id === selectedClass)?.emoji || "⚔️", onboardingCompleted: true });
-    setTimeout(() => router.push("/dashboard"), 500);
-  }, [name, selectedClass, createUser, updateProfile, play, router]);
+  const handleEmailRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!username.trim() || !email || !password) return;
+    if (password.length < 6) {
+      setError("รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร");
+      return;
+    }
+    play("click");
+    setLoading(true);
+    setError("");
+    const { error: err } = await signUpWithEmail(email, password, username.trim());
+    if (err) {
+      setError(err.message);
+      setLoading(false);
+    } else {
+      play("levelup");
+      router.push("/dashboard");
+    }
+  };
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-6 bg-[#0c0c1d] relative">
       <div className="fixed inset-0 scanline pointer-events-none z-10" />
 
       <div className="relative z-20 w-full max-w-sm">
-        {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-8"
         >
-          <div className="text-5xl mb-4 animate-float-pixel">🎮</div>
-          <h1 className="font-pixel text-xl text-[#fbbf24] retro-text-shadow mb-2">
-            NEW GAME
+          <div className="text-5xl mb-4 animate-float">🎮</div>
+          <h1 className="font-heading text-3xl text-[#fbbf24] retro-text-shadow mb-2">
+            สร้างบัญชีใหม่
           </h1>
-          <p className="text-[#94a3b8] text-lg">สร้างตัวละครของคุณ</p>
+          <p className="text-[#94a3b8] text-base">เริ่มต้นการผจญภัยของคุณ</p>
         </motion.div>
 
-        {step === 1 ? (
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="space-y-6"
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="space-y-4"
+        >
+          {/* Google Register */}
+          <button
+            onClick={handleGoogleRegister}
+            disabled={loading}
+            className="w-full game-btn game-btn-google py-3.5 px-6 flex items-center justify-center gap-3 text-base disabled:opacity-50"
           >
-            {/* Name input */}
-            <div className="pixel-card p-4">
-              <label className="font-pixel text-[10px] text-[#fbbf24] block mb-3">
-                PLAYER NAME
-              </label>
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleNext()}
-                placeholder="ใส่ชื่อของคุณ..."
-                maxLength={20}
-                className="w-full bg-[#0c0c1d] border-2 border-[#2a2a5a] px-4 py-3 text-xl text-white placeholder-[#475569] focus:border-[#8b5cf6] focus:outline-none transition-colors font-retro"
-                autoFocus
-              />
-              <p className="font-pixel text-[7px] text-[#475569] mt-2">
-                {name.length}/20
-              </p>
-            </div>
+            <svg width="20" height="20" viewBox="0 0 24 24">
+              <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
+              <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+              <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+              <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+            </svg>
+            <span className="font-game">สมัครด้วย Google</span>
+          </button>
 
-            <button
-              onClick={handleNext}
-              disabled={!name.trim()}
-              className="w-full pixel-btn bg-[#8b5cf6] hover:bg-[#7c3aed] disabled:opacity-40 disabled:cursor-not-allowed text-white font-pixel text-sm py-4 tracking-wider transition-colors"
-            >
-              NEXT →
-            </button>
-          </motion.div>
-        ) : (
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="space-y-4"
-          >
-            {/* Class selection */}
-            <div className="pixel-card p-4">
-              <label className="font-pixel text-[10px] text-[#fbbf24] block mb-3">
-                CHOOSE YOUR CLASS
-              </label>
-              <div className="grid grid-cols-2 gap-3">
-                {CLASS_OPTIONS.map((cls) => (
-                  <button
-                    key={cls.id}
-                    onClick={() => { play("click"); setSelectedClass(cls.id); }}
-                    className={`pixel-card p-3 text-center transition-all ${
-                      selectedClass === cls.id
-                        ? "border-[#8b5cf6] bg-[#8b5cf6]/10 shadow-[0_0_15px_rgba(139,92,246,0.3)]"
-                        : "hover:bg-white/5"
-                    }`}
-                  >
-                    <div className="text-3xl mb-1">{cls.emoji}</div>
-                    <p className="font-pixel text-[9px] text-white">{cls.name}</p>
-                    <p className="text-sm text-[#94a3b8]">{cls.nameTh}</p>
-                  </button>
-                ))}
+          <div className="flex items-center gap-3 my-2">
+            <div className="flex-1 h-px bg-[#2a2a5a]" />
+            <span className="text-xs text-[#475569] font-game">หรือ</span>
+            <div className="flex-1 h-px bg-[#2a2a5a]" />
+          </div>
+
+          {/* Email Register */}
+          <form onSubmit={handleEmailRegister} className="space-y-3">
+            <div className="game-card p-4 space-y-3">
+              <div>
+                <label className="font-game text-xs text-[#94a3b8] block mb-1.5">ชื่อผู้เล่น</label>
+                <input
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="ชื่อที่จะแสดงในเกม"
+                  maxLength={20}
+                  className="w-full bg-[#0c0c1d] border border-[#2a2a5a] rounded-lg px-4 py-2.5 text-sm text-white placeholder-[#475569] focus:border-[#8b5cf6] focus:outline-none focus:ring-1 focus:ring-[#8b5cf6]/50 transition-all"
+                  autoFocus
+                />
+              </div>
+              <div>
+                <label className="font-game text-xs text-[#94a3b8] block mb-1.5">อีเมล</label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="your@email.com"
+                  className="w-full bg-[#0c0c1d] border border-[#2a2a5a] rounded-lg px-4 py-2.5 text-sm text-white placeholder-[#475569] focus:border-[#8b5cf6] focus:outline-none focus:ring-1 focus:ring-[#8b5cf6]/50 transition-all"
+                />
+              </div>
+              <div>
+                <label className="font-game text-xs text-[#94a3b8] block mb-1.5">รหัสผ่าน</label>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="อย่างน้อย 6 ตัวอักษร"
+                  className="w-full bg-[#0c0c1d] border border-[#2a2a5a] rounded-lg px-4 py-2.5 text-sm text-white placeholder-[#475569] focus:border-[#8b5cf6] focus:outline-none focus:ring-1 focus:ring-[#8b5cf6]/50 transition-all"
+                />
               </div>
             </div>
 
-            {/* Preview */}
-            <div className="pixel-card p-4 text-center">
-              <p className="font-pixel text-[8px] text-[#475569] mb-2">PREVIEW</p>
-              <div className="text-4xl mb-2">{CLASS_OPTIONS.find(c => c.id === selectedClass)?.emoji}</div>
-              <p className="font-pixel text-sm text-white">{name}</p>
-              <p className="text-[#fbbf24] text-sm">Lv.1 {CLASS_OPTIONS.find(c => c.id === selectedClass)?.name}</p>
-            </div>
-
-            <div className="flex gap-3">
-              <button
-                onClick={() => { play("click"); setStep(1); }}
-                className="pixel-btn bg-[#1e1e3a] hover:bg-[#2a2a5a] text-[#94a3b8] font-pixel text-[10px] py-3 px-6 tracking-wider transition-colors"
+            {error && (
+              <motion.div
+                initial={{ opacity: 0, y: -5 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="game-card p-3 border-red-500/30 text-center"
               >
-                ← BACK
-              </button>
-              <button
-                onClick={handleCreate}
-                className="flex-1 pixel-btn bg-[#22c55e] hover:bg-[#16a34a] text-white font-pixel text-sm py-3 tracking-wider transition-colors"
-              >
-                ▶ START!
-              </button>
-            </div>
-          </motion.div>
-        )}
+                <p className="text-sm text-red-400">{error}</p>
+              </motion.div>
+            )}
 
-        <p className="text-center text-[#475569] mt-6 text-lg">
-          มี save อยู่แล้ว?{" "}
-          <Link href="/login" className="text-[#8b5cf6] hover:text-[#a78bfa] transition-colors">
-            โหลด save →
-          </Link>
-        </p>
+            <button
+              type="submit"
+              disabled={loading || !username.trim() || !email || !password}
+              className="w-full game-btn game-btn-success py-3 px-6 text-base font-game disabled:opacity-40"
+            >
+              {loading ? "กำลังสร้างบัญชี..." : "▶ เริ่มการผจญภัย!"}
+            </button>
+          </form>
+
+          <p className="text-center text-[#94a3b8] text-sm pt-2">
+            มีบัญชีอยู่แล้ว?{" "}
+            <Link href="/login" className="text-[#8b5cf6] hover:text-[#a78bfa] font-game transition-colors">
+              เข้าสู่ระบบ →
+            </Link>
+          </p>
+
+          <p className="text-center text-sm">
+            <Link href="/" className="text-[#475569] hover:text-[#94a3b8] transition-colors">
+              ← กลับหน้าแรก
+            </Link>
+          </p>
+        </motion.div>
       </div>
     </div>
   );

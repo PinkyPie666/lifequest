@@ -36,7 +36,7 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
       </head>
-      <body className="font-retro min-h-screen bg-[#0c0c1d] text-[#e2e8f0] overflow-x-hidden">
+      <body className="font-body min-h-screen bg-[#0c0c1d] text-[#e2e8f0] overflow-x-hidden">
         <div className="relative min-h-screen">
           {children}
         </div>

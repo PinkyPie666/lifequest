@@ -3,8 +3,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { useUserStore } from "@/stores/useUserStore";
 import { useSoundEffect } from "@/hooks/useSoundEffect";
+import { getCurrentUser } from "@/lib/supabase/api";
 
 const STARS = Array.from({ length: 40 }, (_, i) => ({
   id: i,
@@ -17,31 +17,30 @@ const STARS = Array.from({ length: 40 }, (_, i) => ({
 
 export default function LandingPage() {
   const router = useRouter();
-  const { user } = useUserStore();
   const { play } = useSoundEffect();
   const [phase, setPhase] = useState(0);
   const [showCursor, setShowCursor] = useState(true);
 
   useEffect(() => {
-    if (user && user.onboardingCompleted) {
-      router.replace("/dashboard");
-      return;
+    async function checkAuth() {
+      const user = await getCurrentUser();
+      if (user) {
+        router.replace("/dashboard");
+        return;
+      }
     }
+    checkAuth();
     const t1 = setTimeout(() => setPhase(1), 500);
     const t2 = setTimeout(() => setPhase(2), 1800);
     const t3 = setTimeout(() => setPhase(3), 3000);
     const cursorInterval = setInterval(() => setShowCursor((p) => !p), 530);
     return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearInterval(cursorInterval); };
-  }, [user, router]);
+  }, [router]);
 
   const handleStart = useCallback(() => {
     play("coin");
-    if (user) {
-      router.push("/dashboard");
-    } else {
-      router.push("/register");
-    }
-  }, [play, user, router]);
+    router.push("/register");
+  }, [play, router]);
 
   const handleLogin = useCallback(() => {
     play("click");
@@ -75,7 +74,7 @@ export default function LandingPage() {
       {/* Scanline overlay */}
       <div className="fixed inset-0 scanline z-10 pointer-events-none" />
 
-      {/* Ground pixel art */}
+      {/* Ground */}
       <div className="absolute bottom-0 left-0 right-0 h-20 z-0">
         <div className="absolute bottom-0 left-0 right-0 h-8 bg-[#1a472a]" />
         <div className="absolute bottom-8 left-0 right-0 h-4 bg-[#2d5a3f]" />
@@ -86,7 +85,6 @@ export default function LandingPage() {
 
       {/* Main content */}
       <div className="relative z-20 text-center px-6 max-w-md mx-auto">
-        {/* Pixel Sword Icon */}
         <AnimatePresence>
           {phase >= 1 && (
             <motion.div
@@ -95,12 +93,11 @@ export default function LandingPage() {
               transition={{ type: "spring", bounce: 0.5, duration: 0.8 }}
               className="mb-6"
             >
-              <div className="text-7xl animate-float-pixel filter drop-shadow-lg">⚔️</div>
+              <div className="text-7xl animate-float filter drop-shadow-lg">⚔️</div>
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* Title */}
         <AnimatePresence>
           {phase >= 2 && (
             <motion.div
@@ -108,19 +105,18 @@ export default function LandingPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
             >
-              <h1 className="font-pixel text-3xl sm:text-4xl text-[#fbbf24] retro-glow mb-3 retro-text-shadow leading-relaxed">
+              <h1 className="font-heading text-4xl sm:text-5xl text-[#fbbf24] retro-glow mb-3 retro-text-shadow leading-relaxed">
                 LIFE<span className="text-[#8b5cf6]">QUEST</span>
               </h1>
               <div className="flex items-center justify-center gap-2 mb-2">
                 <div className="h-[2px] w-8 bg-[#8b5cf6]" />
-                <span className="font-pixel text-[8px] text-[#94a3b8] tracking-wider">RPG HABIT TRACKER</span>
+                <span className="font-game text-xs text-[#94a3b8] tracking-wider">RPG HABIT TRACKER</span>
                 <div className="h-[2px] w-8 bg-[#8b5cf6]" />
               </div>
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* Tagline typing effect */}
         <AnimatePresence>
           {phase >= 2 && (
             <motion.div
@@ -129,9 +125,9 @@ export default function LandingPage() {
               transition={{ delay: 0.3 }}
               className="mb-10 mt-6"
             >
-              <div className="pixel-card p-4 mx-auto max-w-xs">
-                <p className="text-lg text-[#94a3b8] leading-relaxed">
-                  เปลี่ยนชีวิตจริงเป็นเกม RPG{" "}
+              <div className="game-card p-4 mx-auto max-w-xs">
+                <p className="text-base text-[#94a3b8] leading-relaxed">
+                  เปลี่ยนชีวิตจริงเป็นเกม RPG
                   <br />
                   ทำภารกิจ สะสม XP เลเวลอัพ!
                 </p>
@@ -140,7 +136,6 @@ export default function LandingPage() {
           )}
         </AnimatePresence>
 
-        {/* Feature badges */}
         <AnimatePresence>
           {phase >= 3 && (
             <motion.div
@@ -158,17 +153,16 @@ export default function LandingPage() {
                   initial={{ opacity: 0, scale: 0 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: i * 0.15 }}
-                  className="pixel-card px-4 py-2 flex items-center gap-2"
+                  className="game-card px-4 py-2 flex items-center gap-2"
                 >
                   <span className="text-xl">{f.emoji}</span>
-                  <span className="font-pixel text-[8px] text-[#fbbf24]">{f.label}</span>
+                  <span className="font-game text-xs text-[#fbbf24]">{f.label}</span>
                 </motion.div>
               ))}
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* Buttons */}
         <AnimatePresence>
           {phase >= 3 && (
             <motion.div
@@ -179,22 +173,20 @@ export default function LandingPage() {
             >
               <button
                 onClick={handleStart}
-                className="w-full pixel-btn bg-[#8b5cf6] hover:bg-[#7c3aed] text-white font-pixel text-sm py-4 px-8 tracking-wider transition-colors"
+                className="w-full game-btn game-btn-primary py-4 px-8 text-base font-game"
               >
-                ▶ START QUEST
+                ▶ เริ่มการผจญภัย
               </button>
               <button
                 onClick={handleLogin}
-                className="w-full pixel-btn bg-[#1e1e3a] hover:bg-[#2a2a5a] text-[#94a3b8] hover:text-white font-pixel text-[10px] py-3 px-8 tracking-wider transition-colors"
+                className="w-full game-btn game-btn-secondary py-3 px-8 text-sm font-game"
               >
-                CONTINUE SAVE{" "}
-                <span className="text-[#fbbf24]">→</span>
+                เข้าสู่ระบบ <span className="text-[#fbbf24]">→</span>
               </button>
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* Blinking cursor */}
         <AnimatePresence>
           {phase >= 3 && (
             <motion.div
@@ -203,7 +195,7 @@ export default function LandingPage() {
               transition={{ delay: 0.6 }}
               className="mt-8"
             >
-              <p className="font-pixel text-[8px] text-[#475569]">
+              <p className="font-game text-xs text-[#475569]">
                 PRESS START{showCursor ? "▮" : " "}
               </p>
             </motion.div>
@@ -211,9 +203,8 @@ export default function LandingPage() {
         </AnimatePresence>
       </div>
 
-      {/* Version */}
       <div className="absolute bottom-4 text-center z-20">
-        <p className="font-pixel text-[7px] text-[#334155]">v1.0.0 // MADE WITH ♥</p>
+        <p className="font-game text-xs text-[#334155]">v2.0.0 // MADE WITH ♥</p>
       </div>
     </div>
   );

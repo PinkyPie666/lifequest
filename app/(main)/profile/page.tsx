@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useUserStore } from "@/stores/useUserStore";
-import { useHabitStore } from "@/stores/useHabitStore";
-import { useThemeStore, THEMES, type ThemeName } from "@/stores/useThemeStore";
 import { useSoundEffect } from "@/hooks/useSoundEffect";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { getCurrentUser, getProfile, updateProfile as updateProfileApi, fetchHabits, signOut } from "@/lib/supabase/api";
+import type { HabitRow, Profile } from "@/types/database";
 
 const RANK_TIERS = [
   { name: "Bronze", minLevel: 1, emoji: "🥉" },
@@ -26,39 +26,61 @@ function getRank(level: number) {
   return rank;
 }
 
-const AVATARS = ["⚔️", "🧙", "🏹", "💚", "🐉", "🦊", "🐺", "🦁", "🎮", "👾", "🤖", "💀"];
-
 export default function ProfilePage() {
-  const { user, updateProfile, reset } = useUserStore();
-  const { habits } = useHabitStore();
-  const { theme, setTheme } = useThemeStore();
+  const router = useRouter();
   const { play } = useSoundEffect();
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [habits, setHabits] = useState<HabitRow[]>([]);
+  const [loading, setLoading] = useState(true);
   const [editOpen, setEditOpen] = useState(false);
-  const [editName, setEditName] = useState(user?.displayName || "");
-  const [editBio, setEditBio] = useState(user?.bio || "");
-  const [showReset, setShowReset] = useState(false);
+  const [editName, setEditName] = useState("");
+  const [showLogout, setShowLogout] = useState(false);
 
-  if (!user) return null;
+  useEffect(() => {
+    async function load() {
+      const user = await getCurrentUser();
+      if (!user) { router.replace("/login"); return; }
+      const [pRes, hRes] = await Promise.all([getProfile(user.id), fetchHabits(user.id)]);
+      if (pRes.data) { setProfile(pRes.data); setEditName(pRes.data.username || pRes.data.full_name || ""); }
+      setHabits(hRes.data);
+      setLoading(false);
+    }
+    load();
+  }, [router]);
 
-  const rank = getRank(user.level);
-  const xpForNext = user.level * user.level * 100;
-  const xpPct = Math.min(100, Math.round((user.totalXp / xpForNext) * 100));
-  const daysActive = Math.max(1, Math.floor((Date.now() - new Date(user.joinedAt).getTime()) / 86400000));
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="text-4xl mb-3 animate-float">👤</div>
+          <p className="font-game text-sm text-[#94a3b8]">กำลังโหลด...</p>
+        </div>
+      </div>
+    );
+  }
 
-  const handleSave = () => {
+  if (!profile) return null;
+
+  const rank = getRank(profile.level);
+  const xpForNext = profile.level * profile.level * 100;
+  const xpPct = Math.min(100, Math.round((profile.total_xp / xpForNext) * 100));
+  const daysActive = Math.max(1, Math.floor((Date.now() - new Date(profile.created_at).getTime()) / 86400000));
+
+  const handleSave = async () => {
     play("success");
-    updateProfile({ displayName: editName.trim() || user.displayName, bio: editBio });
+    const { data } = await updateProfileApi(profile.id, { username: editName.trim() || profile.username });
+    if (data) setProfile(data);
     setEditOpen(false);
   };
 
-  const handleAvatarChange = (emoji: string) => {
-    play("coin");
-    updateProfile({ avatarEmoji: emoji });
+  const handleLogout = async () => {
+    play("click");
+    await signOut();
+    router.replace("/");
   };
 
   return (
     <div className="px-4 pt-6 pb-28 safe-top space-y-4">
-      <div className="fixed inset-0 scanline pointer-events-none z-10" />
 
       {/* Header */}
       <motion.div
@@ -66,13 +88,13 @@ export default function ProfilePage() {
         animate={{ opacity: 1, y: 0 }}
         className="flex items-center justify-between"
       >
-        <h1 className="font-pixel text-[13px] text-[#fbbf24] retro-text-shadow">👤 HERO PROFILE</h1>
+        <h1 className="font-heading text-lg text-white">👤 โปรไฟล์</h1>
         <Link
           href="/settings"
           onClick={() => play("navigate")}
-          className="font-pixel text-[8px] text-[#8b5cf6] hover:text-[#a78bfa] pixel-btn bg-[#1e1e3a] px-3 py-1"
+          className="game-btn game-btn-secondary px-3 py-1.5 text-xs font-game"
         >
-          ⚙ SETTINGS
+          ⚙ ตั้งค่า
         </Link>
       </motion.div>
 
@@ -81,22 +103,24 @@ export default function ProfilePage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="pixel-card p-5 text-center"
+        className="game-card p-5 text-center"
       >
-        <div className="text-5xl mb-3 animate-float-pixel">{user.avatarEmoji}</div>
-        <h2 className="font-pixel text-lg text-white retro-text-shadow">{user.displayName}</h2>
-        <div className="flex items-center justify-center gap-2 mt-1">
-          <span className="font-pixel text-[9px] text-[#fbbf24]">Lv.{user.level}</span>
-          <span className="font-pixel text-[9px] text-[#8b5cf6]">{user.classType.toUpperCase()}</span>
-          <span className="font-pixel text-[9px]" style={{ color: "#f59e0b" }}>{rank.emoji} {rank.name}</span>
+        <div className="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br from-[#8b5cf6]/30 to-[#6366f1]/30 flex items-center justify-center text-4xl border border-[#8b5cf6]/30 mb-3">
+          {profile.avatar_url ? (
+            <img src={profile.avatar_url} alt="" className="w-16 h-16 rounded-xl object-cover" />
+          ) : "⚔️"}
         </div>
-        {user.bio && <p className="text-sm text-[#94a3b8] mt-2">{user.bio}</p>}
+        <h2 className="font-heading text-xl text-white">{profile.username || profile.full_name || "นักผจญภัย"}</h2>
+        <div className="flex items-center justify-center gap-2 mt-1">
+          <span className="font-game text-sm text-[#fbbf24]">Lv.{profile.level}</span>
+          <span className="font-game text-sm" style={{ color: "#f59e0b" }}>{rank.emoji} {rank.name}</span>
+        </div>
 
         <button
-          onClick={() => { play("click"); setEditOpen(true); setEditName(user.displayName); setEditBio(user.bio); }}
-          className="pixel-btn bg-[#1e1e3a] hover:bg-[#2a2a5a] text-[#94a3b8] font-pixel text-[8px] py-2 px-4 mt-3"
+          onClick={() => { play("click"); setEditOpen(true); }}
+          className="game-btn game-btn-secondary px-4 py-2 text-xs font-game mt-3"
         >
-          ✏ EDIT PROFILE
+          ✏ แก้ไขโปรไฟล์
         </button>
       </motion.div>
 
@@ -105,13 +129,13 @@ export default function ProfilePage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.15 }}
-        className="pixel-card p-4"
+        className="game-card p-4"
       >
         <div className="flex items-center justify-between mb-2">
-          <span className="font-pixel text-[8px] text-[#fbbf24]">LEVEL PROGRESS</span>
-          <span className="font-pixel text-[8px] text-[#94a3b8]">Lv.{user.level} → Lv.{user.level + 1}</span>
+          <span className="font-game text-sm text-[#fbbf24]">Level Progress</span>
+          <span className="font-game text-sm text-[#94a3b8]">Lv.{profile.level} → Lv.{profile.level + 1}</span>
         </div>
-        <div className="h-5 bg-[#1a1a3a] border-2 border-[#2a2a5a]">
+        <div className="bar-track h-5">
           <motion.div
             className="xp-bar h-full"
             initial={{ width: 0 }}
@@ -119,8 +143,8 @@ export default function ProfilePage() {
             transition={{ duration: 0.8 }}
           />
         </div>
-        <p className="font-pixel text-[7px] text-[#94a3b8] mt-1 text-right">
-          {user.totalXp} / {xpForNext} XP ({xpPct}%)
+        <p className="font-game text-xs text-[#94a3b8] mt-1 text-right">
+          {profile.total_xp} / {xpForNext} XP ({xpPct}%)
         </p>
       </motion.div>
 
@@ -132,67 +156,31 @@ export default function ProfilePage() {
         className="grid grid-cols-2 gap-2"
       >
         {[
-          { emoji: "📅", value: daysActive, label: "DAYS ACTIVE" },
-          { emoji: "✅", value: user.totalCompletions, label: "COMPLETED" },
-          { emoji: "🔥", value: user.longestStreak, label: "BEST STREAK" },
-          { emoji: "🪙", value: user.coins, label: "COINS" },
-          { emoji: "⭐", value: user.perfectDays, label: "PERFECT DAYS" },
-          { emoji: "📋", value: habits.filter(h => h.isActive).length, label: "ACTIVE QUESTS" },
+          { emoji: "📅", value: daysActive, label: "วันที่ใช้งาน" },
+          { emoji: "🔥", value: profile.longest_streak, label: "Best Streak" },
+          { emoji: "⚡", value: profile.total_xp.toLocaleString(), label: "Total XP" },
+          { emoji: "📋", value: habits.length, label: "ภารกิจทั้งหมด" },
         ].map((s) => (
-          <div key={s.label} className="pixel-card p-3 text-center">
-            <span className="text-xl">{s.emoji}</span>
-            <p className="font-pixel text-sm text-white mt-1">{s.value}</p>
-            <p className="font-pixel text-[6px] text-[#94a3b8]">{s.label}</p>
+          <div key={s.label} className="game-card p-3.5 text-center">
+            <span className="text-2xl">{s.emoji}</span>
+            <p className="font-heading text-lg text-white mt-1">{s.value}</p>
+            <p className="font-game text-xs text-[#94a3b8]">{s.label}</p>
           </div>
         ))}
       </motion.div>
 
-      {/* Theme Switcher */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.25 }}
-        className="pixel-card p-4"
-      >
-        <p className="font-pixel text-[9px] text-[#fbbf24] mb-3">🎨 THEME</p>
-        <div className="grid grid-cols-3 gap-2">
-          {(Object.keys(THEMES) as ThemeName[]).map((t) => (
-            <button
-              key={t}
-              onClick={() => { play("toggle"); setTheme(t); }}
-              className={cn(
-                "pixel-card p-3 text-center transition-all",
-                theme === t
-                  ? "border-[#fbbf24] bg-[#fbbf24]/10 shadow-[0_0_10px_rgba(251,191,36,0.2)]"
-                  : "hover:bg-white/5"
-              )}
-            >
-              <div
-                className="w-6 h-6 mx-auto mb-1 border-2"
-                style={{
-                  backgroundColor: THEMES[t].colors.bg,
-                  borderColor: THEMES[t].colors.primary,
-                }}
-              />
-              <p className="font-pixel text-[6px] text-white">{THEMES[t].label}</p>
-            </button>
-          ))}
-        </div>
-      </motion.div>
-
-      {/* Danger Zone */}
+      {/* Logout */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
-        className="pixel-card p-4"
+        className="game-card p-4"
       >
-        <p className="font-pixel text-[9px] text-[#ef4444] mb-3">⚠ DANGER ZONE</p>
         <button
-          onClick={() => { play("error"); setShowReset(true); }}
-          className="w-full pixel-btn bg-[#ef4444]/20 hover:bg-[#ef4444]/30 text-[#ef4444] font-pixel text-[9px] py-2"
+          onClick={() => setShowLogout(true)}
+          className="w-full game-btn game-btn-danger py-2.5 font-game text-sm"
         >
-          🗑 RESET ALL DATA
+          ออกจากระบบ
         </button>
       </motion.div>
 
@@ -210,64 +198,31 @@ export default function ProfilePage() {
               initial={{ scale: 0.8, y: 50 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.8, y: 50 }}
-              className="pixel-card p-5 w-full max-w-sm space-y-4"
+              className="game-card p-5 w-full max-w-sm space-y-4"
               onClick={(e) => e.stopPropagation()}
             >
-              <h2 className="font-pixel text-[12px] text-[#fbbf24] text-center">EDIT PROFILE</h2>
-
-              {/* Avatar picker */}
-              <div>
-                <p className="font-pixel text-[8px] text-[#94a3b8] mb-2">AVATAR</p>
-                <div className="grid grid-cols-6 gap-2">
-                  {AVATARS.map((a) => (
-                    <button
-                      key={a}
-                      onClick={() => handleAvatarChange(a)}
-                      className={cn(
-                        "text-2xl p-1 border-2 transition-all",
-                        user.avatarEmoji === a
-                          ? "border-[#fbbf24] bg-[#fbbf24]/10"
-                          : "border-[#2a2a5a] hover:border-[#8b5cf6]"
-                      )}
-                    >
-                      {a}
-                    </button>
-                  ))}
-                </div>
-              </div>
+              <h2 className="font-heading text-base text-[#fbbf24] text-center">แก้ไขโปรไฟล์</h2>
 
               <div>
-                <p className="font-pixel text-[8px] text-[#94a3b8] mb-1">NAME</p>
+                <p className="font-game text-xs text-[#94a3b8] mb-1.5">ชื่อผู้เล่น</p>
                 <input
                   type="text"
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
                   maxLength={20}
-                  className="w-full bg-[#0c0c1d] border-2 border-[#2a2a5a] px-3 py-2 text-white font-retro focus:border-[#8b5cf6] focus:outline-none"
+                  className="w-full bg-[#0c0c1d] border border-[#2a2a5a] rounded-lg px-4 py-2.5 text-sm text-white focus:border-[#8b5cf6] focus:outline-none focus:ring-1 focus:ring-[#8b5cf6]/50 transition-all"
                 />
-              </div>
-
-              <div>
-                <p className="font-pixel text-[8px] text-[#94a3b8] mb-1">BIO</p>
-                <textarea
-                  value={editBio}
-                  onChange={(e) => setEditBio(e.target.value.slice(0, 100))}
-                  placeholder="บอกเกี่ยวกับตัวคุณ..."
-                  rows={2}
-                  className="w-full bg-[#0c0c1d] border-2 border-[#2a2a5a] px-3 py-2 text-white font-retro focus:border-[#8b5cf6] focus:outline-none resize-none"
-                />
-                <p className="font-pixel text-[6px] text-[#475569] text-right">{editBio.length}/100</p>
               </div>
 
               <div className="flex gap-3">
                 <button
                   onClick={() => { play("click"); setEditOpen(false); }}
-                  className="flex-1 pixel-btn bg-[#1e1e3a] hover:bg-[#2a2a5a] text-[#94a3b8] font-pixel text-[9px] py-2"
+                  className="flex-1 game-btn game-btn-secondary py-2.5 font-game text-sm"
                 >
-                  CANCEL
+                  ยกเลิก
                 </button>
-                <button onClick={handleSave} className="flex-1 pixel-btn bg-[#22c55e] hover:bg-[#16a34a] text-white font-pixel text-[9px] py-2">
-                  SAVE
+                <button onClick={handleSave} className="flex-1 game-btn game-btn-success py-2.5 font-game text-sm">
+                  บันทึก
                 </button>
               </div>
             </motion.div>
@@ -275,38 +230,38 @@ export default function ProfilePage() {
         )}
       </AnimatePresence>
 
-      {/* Reset Confirm Modal */}
+      {/* Logout Confirm Modal */}
       <AnimatePresence>
-        {showReset && (
+        {showLogout && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 px-4"
-            onClick={() => setShowReset(false)}
+            onClick={() => setShowLogout(false)}
           >
             <motion.div
               initial={{ scale: 0.8 }}
               animate={{ scale: 1 }}
               exit={{ scale: 0.8 }}
-              className="pixel-card p-5 w-full max-w-xs text-center space-y-4"
+              className="game-card p-6 w-full max-w-xs text-center space-y-4"
               onClick={(e) => e.stopPropagation()}
             >
-              <p className="text-4xl">⚠️</p>
-              <p className="font-pixel text-[10px] text-[#ef4444]">DELETE ALL DATA?</p>
-              <p className="text-sm text-[#94a3b8]">ข้อมูลทั้งหมดจะหายไปถาวร ไม่สามารถกู้คืนได้!</p>
+              <p className="text-4xl">👋</p>
+              <p className="font-heading text-base text-white">ออกจากระบบ?</p>
+              <p className="text-sm text-[#94a3b8]">ข้อมูลของคุณจะถูกบันทึกไว้อย่างปลอดภัย</p>
               <div className="flex gap-3">
                 <button
-                  onClick={() => { play("click"); setShowReset(false); }}
-                  className="flex-1 pixel-btn bg-[#1e1e3a] hover:bg-[#2a2a5a] text-[#94a3b8] font-pixel text-[9px] py-2"
+                  onClick={() => { play("click"); setShowLogout(false); }}
+                  className="flex-1 game-btn game-btn-secondary py-2.5 font-game text-sm"
                 >
-                  CANCEL
+                  ยกเลิก
                 </button>
                 <button
-                  onClick={() => { play("error"); reset(); window.location.href = "/"; }}
-                  className="flex-1 pixel-btn bg-[#ef4444] hover:bg-[#dc2626] text-white font-pixel text-[9px] py-2"
+                  onClick={handleLogout}
+                  className="flex-1 game-btn game-btn-danger py-2.5 font-game text-sm"
                 >
-                  DELETE
+                  ออกจากระบบ
                 </button>
               </div>
             </motion.div>
