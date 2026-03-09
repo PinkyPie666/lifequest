@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSoundEffect } from "@/hooks/useSoundEffect";
-import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { getCurrentUser, getProfile, updateProfile as updateProfileApi, fetchHabits, signOut } from "@/lib/supabase/api";

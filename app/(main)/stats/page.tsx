@@ -16,7 +16,6 @@ function generateNpcMessage(profile: Profile | null, habits: HabitRow[], todayLo
   const completedToday = todayLogs.filter((l) => l.is_completed).length;
   const totalHabits = habits.length;
   const streak = profile?.current_streak || 0;
-  const level = profile?.level || 1;
   const hour = new Date().getHours();
 
   if (totalHabits === 0) {
