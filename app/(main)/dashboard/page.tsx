@@ -102,7 +102,7 @@ export default function DashboardPage() {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <div className="text-4xl mb-3 animate-float">⚔️</div>
-          <p className="font-game text-sm text-[#94a3b8]">กำลังโหลด...</p>
+          <p className="font-game text-sm" style={{ color: "var(--theme-text-dim)" }}>กำลังโหลด...</p>
         </div>
       </div>
     );
@@ -113,8 +113,8 @@ export default function DashboardPage() {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center space-y-3 px-6">
           <div className="text-5xl">⚠️</div>
-          <p className="font-heading text-base text-white">ไม่พบข้อมูลโปรไฟล์</p>
-          <p className="font-body text-sm text-slate-400">กรุณาตรวจสอบการตั้งค่า Supabase</p>
+          <p className="font-heading text-base" style={{ color: "var(--theme-text)" }}>ไม่พบข้อมูลโปรไฟล์</p>
+          <p className="font-body text-sm" style={{ color: "var(--theme-text-dim)" }}>กรุณาตรวจสอบการตั้งค่า Supabase</p>
           <button onClick={() => router.replace("/login")} className="game-btn bg-purple-600 text-white font-heading text-sm px-4 py-2 rounded-xl">
             กลับหน้า Login
           </button>
@@ -133,19 +133,19 @@ export default function DashboardPage() {
         className="game-card p-4"
       >
         <div className="flex items-center gap-3 mb-3">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#8b5cf6]/30 to-[#6366f1]/30 flex items-center justify-center text-2xl border border-[#8b5cf6]/30">
+          <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl border" style={{ background: "linear-gradient(135deg, color-mix(in srgb, var(--theme-primary) 20%, transparent), color-mix(in srgb, var(--theme-secondary) 20%, transparent))", borderColor: "var(--theme-border)" }}>
             {profile.avatar_url ? (
               <img src={profile.avatar_url} alt="" className="w-10 h-10 rounded-lg object-cover" />
             ) : "⚔️"}
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
-              <p className="font-heading text-base text-white truncate">{profile.username || profile.full_name || "นักผจญภัย"}</p>
-              <span className="font-game text-xs text-[#fbbf24] bg-[#fbbf24]/10 px-2 py-0.5 rounded-md">
+              <p className="font-heading text-base truncate" style={{ color: "var(--theme-text)" }}>{profile.username || profile.full_name || "นักผจญภัย"}</p>
+              <span className="font-game text-xs px-2 py-0.5 rounded-md" style={{ color: "var(--theme-xp)", background: "color-mix(in srgb, var(--theme-xp) 10%, transparent)" }}>
                 Lv.{profile.level}
               </span>
             </div>
-            <p className="text-sm text-[#94a3b8]">{greeting} 👋</p>
+            <p className="text-sm" style={{ color: "var(--theme-text-dim)" }}>{greeting} 👋</p>
           </div>
           <div className="text-right flex-shrink-0 space-y-0.5">
             <div className="flex items-center gap-1 justify-end">
@@ -158,25 +158,25 @@ export default function DashboardPage() {
         {/* HP / MP / XP Bars */}
         <div className="space-y-2">
           <div className="flex items-center gap-2">
-            <span className="font-game text-xs text-[#ef4444] w-7">HP</span>
+            <span className="font-game text-xs w-7" style={{ color: "var(--theme-hp)" }}>HP</span>
             <div className="flex-1 bar-track h-3.5">
               <div className="hp-bar h-full transition-all duration-500" style={{ width: "100%" }} />
             </div>
-            <span className="font-game text-xs text-[#94a3b8] w-16 text-right">100/100</span>
+            <span className="font-game text-xs w-16 text-right" style={{ color: "var(--theme-text-dim)" }}>100/100</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="font-game text-xs text-[#3b82f6] w-7">MP</span>
+            <span className="font-game text-xs w-7" style={{ color: "var(--theme-mp)" }}>MP</span>
             <div className="flex-1 bar-track h-3.5">
               <div className="mp-bar h-full transition-all duration-500" style={{ width: "100%" }} />
             </div>
-            <span className="font-game text-xs text-[#94a3b8] w-16 text-right">50/50</span>
+            <span className="font-game text-xs w-16 text-right" style={{ color: "var(--theme-text-dim)" }}>50/50</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="font-game text-xs text-[#fbbf24] w-7">XP</span>
+            <span className="font-game text-xs w-7" style={{ color: "var(--theme-xp)" }}>XP</span>
             <div className="flex-1 bar-track h-3.5">
               <div className="xp-bar h-full transition-all duration-500" style={{ width: `${xpProgress}%` }} />
             </div>
-            <span className="font-game text-xs text-[#94a3b8] w-16 text-right">{profile.total_xp}/{xpForNext}</span>
+            <span className="font-game text-xs w-16 text-right" style={{ color: "var(--theme-text-dim)" }}>{profile.total_xp}/{xpForNext}</span>
           </div>
         </div>
       </motion.div>
@@ -189,8 +189,8 @@ export default function DashboardPage() {
         className="game-card p-4"
       >
         <div className="flex items-center justify-between mb-2">
-          <span className="font-game text-sm text-[#fbbf24]">� Quest Progress</span>
-          <span className="font-game text-sm text-white">{completedToday}/{totalToday}</span>
+          <span className="font-game text-sm" style={{ color: "var(--theme-xp)" }}>◆ Quest Progress</span>
+          <span className="font-game text-sm" style={{ color: "var(--theme-text)" }}>{completedToday}/{totalToday}</span>
         </div>
         <div className="bar-track h-5">
           <motion.div
@@ -205,7 +205,7 @@ export default function DashboardPage() {
           </motion.div>
         </div>
         {progressPct === 100 && (
-          <p className="text-center text-sm text-[#22c55e] font-game mt-1.5">🎉 ภารกิจวันนี้ครบแล้ว!</p>
+          <p className="text-center text-sm font-game mt-1.5" style={{ color: "var(--theme-success)" }}>🎉 ภารกิจวันนี้ครบแล้ว!</p>
         )}
       </motion.div>
 
@@ -216,7 +216,7 @@ export default function DashboardPage() {
         transition={{ delay: 0.2 }}
       >
         <div className="flex items-center justify-between mb-3">
-          <h2 className="font-heading text-base text-white">
+          <h2 className="font-heading text-base" style={{ color: "var(--theme-text)" }}>
             ⚔️ Today&apos;s Quests
           </h2>
           <Link
@@ -231,8 +231,8 @@ export default function DashboardPage() {
         {habits.length === 0 ? (
           <div className="game-card p-8 text-center">
             <p className="text-4xl mb-3 animate-float">🗡️</p>
-            <p className="font-game text-sm text-[#94a3b8] mb-4">ยังไม่มีภารกิจ</p>
-            <p className="text-sm text-[#475569] mb-4">สร้างภารกิจแรกของคุณเลย!</p>
+            <p className="font-game text-sm mb-4" style={{ color: "var(--theme-text-dim)" }}>ยังไม่มีภารกิจ</p>
+            <p className="text-sm mb-4" style={{ color: "var(--theme-text-muted)" }}>สร้างภารกิจแรกของคุณเลย!</p>
             <Link href="/habits/new/edit">
               <button
                 onClick={() => play("click")}
@@ -268,18 +268,20 @@ export default function DashboardPage() {
                       )}
                     >
                       <div className="flex items-center gap-3">
-                        <div className={cn(
-                          "w-10 h-10 rounded-xl flex items-center justify-center text-lg transition-all flex-shrink-0",
-                          isCompleted
-                            ? "bg-[#22c55e]/20 border border-[#22c55e]/40"
-                            : "bg-[#1a1a3a] border border-[#2a2a5a]"
-                        )}>
+                        <div
+                          className="w-10 h-10 rounded-xl flex items-center justify-center text-lg transition-all flex-shrink-0 border"
+                          style={{
+                            background: isCompleted ? "color-mix(in srgb, var(--theme-success) 15%, transparent)" : "var(--theme-bg-dark)",
+                            borderColor: isCompleted ? "color-mix(in srgb, var(--theme-success) 40%, transparent)" : "var(--theme-border)",
+                          }}
+                        >
                           {isCompleted ? (
                             <motion.span
                               initial={{ scale: 0 }}
                               animate={{ scale: 1 }}
                               transition={{ type: "spring", bounce: 0.6 }}
-                              className="text-[#22c55e] text-base"
+                              className="text-base"
+                              style={{ color: "var(--theme-success)" }}
                             >
                               ✓
                             </motion.span>
@@ -289,23 +291,23 @@ export default function DashboardPage() {
                         </div>
 
                         <div className="flex-1 min-w-0">
-                          <p className={cn(
-                            "text-sm font-game truncate",
-                            isCompleted ? "line-through text-[#475569]" : "text-white"
-                          )}>
+                          <p
+                            className={cn("text-sm font-game truncate", isCompleted ? "line-through" : "")}
+                            style={{ color: isCompleted ? "var(--theme-text-muted)" : "var(--theme-text)" }}
+                          >
                             {habit.name}
                           </p>
-                          <p className={cn(
-                            "font-game text-xs",
-                            isCompleted ? "text-[#22c55e]" : "text-[#8b5cf6]"
-                          )}>
+                          <p
+                            className="font-game text-xs"
+                            style={{ color: isCompleted ? "var(--theme-success)" : "var(--theme-primary)" }}
+                          >
                             {isCompleted ? `+${xp} XP Earned` : `+${xp} XP`}
                           </p>
                         </div>
 
                         <div className="flex flex-col items-end flex-shrink-0 gap-0.5">
                           {habit.reminder_time && (
-                            <span className="font-game text-xs text-[#475569]">{habit.reminder_time}</span>
+                            <span className="font-game text-xs" style={{ color: "var(--theme-text-muted)" }}>{habit.reminder_time}</span>
                           )}
                           {habit.current_streak > 0 && (
                             <span className="font-game text-xs text-orange-400">🔥{habit.current_streak}</span>
@@ -365,8 +367,8 @@ export default function DashboardPage() {
               >
                 🏆
               </motion.p>
-              <h2 className="font-heading text-2xl text-[#fbbf24] retro-glow">Perfect Day!</h2>
-              <p className="font-game text-sm text-[#8b5cf6]">⭐ +50 Bonus XP</p>
+              <h2 className="font-heading text-2xl retro-glow" style={{ color: "var(--theme-xp)" }}>Perfect Day!</h2>
+              <p className="font-game text-sm" style={{ color: "var(--theme-primary)" }}>⭐ +50 Bonus XP</p>
               <p className="text-sm text-orange-400">🔥 Streak: {(profile?.current_streak || 0) + 1} วัน</p>
               <div className="flex gap-3 pt-2">
                 <Link href="/stats" className="flex-1">

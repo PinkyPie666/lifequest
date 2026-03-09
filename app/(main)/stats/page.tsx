@@ -64,18 +64,18 @@ function TypingTextBox({ text, name }: { text: string; name: string }) {
     <div className="game-card p-4 relative">
       {/* NPC avatar area */}
       <div className="flex items-start gap-3">
-        <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-[#f59e0b]/20 to-[#ef4444]/20 border border-[#f59e0b]/30 flex items-center justify-center text-3xl flex-shrink-0">
+        <div className="w-14 h-14 rounded-xl flex items-center justify-center text-3xl flex-shrink-0 border" style={{ background: "linear-gradient(135deg, color-mix(in srgb, var(--theme-xp) 15%, transparent), color-mix(in srgb, var(--theme-hp) 15%, transparent))", borderColor: "color-mix(in srgb, var(--theme-xp) 30%, transparent)" }}>
           🦊
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
-            <span className="font-heading text-sm text-[#fbbf24]">{name}</span>
-            <span className="text-xs text-[#475569]">• ผู้นำทาง</span>
+            <span className="font-heading text-sm" style={{ color: "var(--theme-xp)" }}>{name}</span>
+            <span className="text-xs" style={{ color: "var(--theme-text-muted)" }}>• ผู้นำทาง</span>
           </div>
-          <div className="bg-[#0c0c1d]/50 rounded-lg p-3 border border-[#2a2a5a]/50 min-h-[3rem]">
-            <p className="text-sm text-[#e2e8f0] leading-relaxed">
+          <div className="rounded-lg p-3 border min-h-[3rem]" style={{ background: "color-mix(in srgb, var(--theme-bg-dark) 50%, transparent)", borderColor: "color-mix(in srgb, var(--theme-border) 50%, transparent)" }}>
+            <p className="text-sm leading-relaxed" style={{ color: "var(--theme-text)" }}>
               {displayedText}
-              {isTyping && <span className="inline-block w-0.5 h-4 bg-[#fbbf24] ml-0.5 animate-blink align-middle" />}
+              {isTyping && <span className="inline-block w-0.5 h-4 ml-0.5 animate-blink align-middle" style={{ background: "var(--theme-xp)" }} />}
             </p>
           </div>
         </div>
@@ -160,7 +160,7 @@ export default function StatsPage() {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <div className="text-4xl mb-3 animate-float">🦊</div>
-          <p className="font-game text-sm text-[#94a3b8]">กำลังโหลด...</p>
+          <p className="font-game text-sm" style={{ color: "var(--theme-text-dim)" }}>กำลังโหลด...</p>
         </div>
       </div>
     );
@@ -173,7 +173,7 @@ export default function StatsPage() {
 
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
-        <h1 className="font-heading text-lg text-white">📊 สถิตินักผจญภัย</h1>
+        <h1 className="font-heading text-lg" style={{ color: "var(--theme-text)" }}>📊 สถิตินักผจญภัย</h1>
       </motion.div>
 
       {/* NPC Mascot Dialog */}
@@ -200,8 +200,8 @@ export default function StatsPage() {
         ].map((s) => (
           <div key={s.label} className="game-card p-3.5 text-center">
             <span className="text-2xl">{s.emoji}</span>
-            <p className="font-heading text-lg text-white mt-1">{s.value}</p>
-            <p className="font-game text-xs text-[#94a3b8]">{s.label}</p>
+            <p className="font-heading text-lg mt-1" style={{ color: "var(--theme-text)" }}>{s.value}</p>
+            <p className="font-game text-xs" style={{ color: "var(--theme-text-dim)" }}>{s.label}</p>
           </div>
         ))}
       </motion.div>
@@ -214,8 +214,8 @@ export default function StatsPage() {
         className="game-card p-4"
       >
         <div className="flex items-center justify-between mb-2">
-          <span className="font-game text-sm text-[#fbbf24]">⭐ Level {profile.level}</span>
-          <span className="font-game text-sm text-[#94a3b8]">{profile.total_xp}/{xpForNext} XP</span>
+          <span className="font-game text-sm" style={{ color: "var(--theme-xp)" }}>⭐ Level {profile.level}</span>
+          <span className="font-game text-sm" style={{ color: "var(--theme-text-dim)" }}>{profile.total_xp}/{xpForNext} XP</span>
         </div>
         <div className="bar-track h-5">
           <motion.div
@@ -225,7 +225,7 @@ export default function StatsPage() {
             transition={{ duration: 0.8 }}
           />
         </div>
-        <p className="font-game text-xs text-[#94a3b8] mt-1.5 text-center">
+        <p className="font-game text-xs mt-1.5 text-center" style={{ color: "var(--theme-text-dim)" }}>
           อีก {xpForNext - profile.total_xp} XP ถึง Level {profile.level + 1}
         </p>
       </motion.div>
@@ -237,7 +237,7 @@ export default function StatsPage() {
         transition={{ delay: 0.3 }}
         className="game-card p-4"
       >
-        <p className="font-heading text-sm text-[#fbbf24] mb-3">🧠 วิเคราะห์พฤติกรรม</p>
+        <p className="font-heading text-sm mb-3" style={{ color: "var(--theme-xp)" }}>🧠 วิเคราะห์พฤติกรรม</p>
         <div className="space-y-3">
           {analysis.map((item, i) => (
             <motion.div
@@ -245,12 +245,13 @@ export default function StatsPage() {
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.35 + i * 0.1 }}
-              className="flex items-start gap-3 p-3 rounded-lg bg-[#0c0c1d]/50 border border-[#2a2a5a]/30"
+              className="flex items-start gap-3 p-3 rounded-lg border"
+              style={{ background: "color-mix(in srgb, var(--theme-bg-dark) 50%, transparent)", borderColor: "color-mix(in srgb, var(--theme-border) 30%, transparent)" }}
             >
               <span className="text-xl flex-shrink-0">{item.icon}</span>
               <div>
                 <p className={cn("font-game text-sm", item.color)}>{item.title}</p>
-                <p className="text-xs text-[#94a3b8] mt-0.5">{item.detail}</p>
+                <p className="text-xs mt-0.5" style={{ color: "var(--theme-text-dim)" }}>{item.detail}</p>
               </div>
             </motion.div>
           ))}
@@ -265,13 +266,13 @@ export default function StatsPage() {
           transition={{ delay: 0.35 }}
           className="game-card p-4"
         >
-          <p className="font-heading text-sm text-[#fbbf24] mb-3">🎯 Quest Breakdown</p>
+          <p className="font-heading text-sm mb-3" style={{ color: "var(--theme-xp)" }}>🎯 Quest Breakdown</p>
           <div className="space-y-3">
             {habits.map((h) => (
               <div key={h.id}>
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-sm text-white font-game">{h.emoji} {h.name}</span>
-                  <span className="font-game text-xs text-[#fbbf24]">🔥{h.current_streak}</span>
+                  <span className="text-sm font-game" style={{ color: "var(--theme-text)" }}>{h.emoji} {h.name}</span>
+                  <span className="font-game text-xs" style={{ color: "var(--theme-xp)" }}>🔥{h.current_streak}</span>
                 </div>
                 <div className="bar-track h-3">
                   <div
@@ -282,7 +283,7 @@ export default function StatsPage() {
                     }}
                   />
                 </div>
-                <div className="flex justify-between font-game text-xs text-[#475569] mt-0.5">
+                <div className="flex justify-between font-game text-xs mt-0.5" style={{ color: "var(--theme-text-muted)" }}>
                   <span>{h.total_completions} ครั้ง</span>
                   <span>Best: {h.longest_streak}</span>
                 </div>

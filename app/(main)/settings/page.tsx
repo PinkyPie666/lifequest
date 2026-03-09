@@ -33,7 +33,7 @@ export default function SettingsPage() {
         >
           ← กลับ
         </button>
-        <h1 className="font-heading text-lg text-white">⚙ ตั้งค่า</h1>
+        <h1 className="font-heading text-lg" style={{ color: "var(--theme-text)" }}>⚙ ตั้งค่า</h1>
       </motion.div>
 
       {/* Theme */}

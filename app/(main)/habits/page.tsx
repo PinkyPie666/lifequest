@@ -127,7 +127,7 @@ export default function HabitsPage() {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <div className="text-4xl mb-3 animate-float">📋</div>
-          <p className="font-game text-sm text-[#94a3b8]">กำลังโหลด...</p>
+          <p className="font-game text-sm" style={{ color: "var(--theme-text-dim)" }}>กำลังโหลด...</p>
         </div>
       </div>
     );
@@ -138,15 +138,17 @@ export default function HabitsPage() {
 
       {/* ─── Tab Header ─────────────── */}
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
-        <div className="flex items-center gap-1 p-1 rounded-xl bg-[#13132b]/80 border border-[#2a2a5a]/50">
+        <div className="flex items-center gap-1 p-1 rounded-xl border" style={{ background: "color-mix(in srgb, var(--theme-bg-card) 80%, transparent)", borderColor: "color-mix(in srgb, var(--theme-border) 50%, transparent)" }}>
           <button
             onClick={() => { play("click"); setActiveTab("templates"); }}
             className={cn(
               "flex-1 py-2.5 rounded-lg font-heading text-sm transition-all text-center",
-              activeTab === "templates"
-                ? "bg-gradient-to-r from-[#8b5cf6] to-[#6366f1] text-white shadow-lg shadow-purple-500/20"
-                : "text-[#94a3b8] hover:text-white"
+              activeTab === "templates" ? "text-white shadow-lg" : ""
             )}
+            style={activeTab === "templates"
+              ? { background: `linear-gradient(to right, var(--theme-primary), var(--theme-secondary))` }
+              : { color: "var(--theme-text-dim)" }
+            }
           >
             🎮 เทมเพลต
           </button>
@@ -154,10 +156,12 @@ export default function HabitsPage() {
             onClick={() => { play("click"); setActiveTab("my"); }}
             className={cn(
               "flex-1 py-2.5 rounded-lg font-heading text-sm transition-all text-center",
-              activeTab === "my"
-                ? "bg-gradient-to-r from-[#8b5cf6] to-[#6366f1] text-white shadow-lg shadow-purple-500/20"
-                : "text-[#94a3b8] hover:text-white"
+              activeTab === "my" ? "text-white shadow-lg" : ""
             )}
+            style={activeTab === "my"
+              ? { background: `linear-gradient(to right, var(--theme-primary), var(--theme-secondary))` }
+              : { color: "var(--theme-text-dim)" }
+            }
           >
             📋 ภารกิจของฉัน {habits.length > 0 && <span className="text-xs opacity-70">({habits.length})</span>}
           </button>
@@ -331,12 +335,11 @@ export default function HabitsPage() {
               <button
                 key={cat.id}
                 onClick={() => { play("click"); setActiveFilter(cat.id); }}
-                className={cn(
-                  "px-3 py-2 rounded-xl font-game text-xs whitespace-nowrap transition-all flex-shrink-0 flex items-center gap-1.5 border",
-                  activeFilter === cat.id
-                    ? "border-[#fbbf24]/50 bg-[#fbbf24]/10 text-[#fbbf24]"
-                    : "border-[#2a2a5a]/50 text-[#475569] hover:text-[#94a3b8]"
-                )}
+                className="px-3 py-2 rounded-xl font-game text-xs whitespace-nowrap transition-all flex-shrink-0 flex items-center gap-1.5 border"
+                style={activeFilter === cat.id
+                  ? { borderColor: "color-mix(in srgb, var(--theme-xp) 50%, transparent)", background: "color-mix(in srgb, var(--theme-xp) 10%, transparent)", color: "var(--theme-xp)" }
+                  : { borderColor: "color-mix(in srgb, var(--theme-border) 50%, transparent)", color: "var(--theme-text-muted)" }
+                }
               >
                 <span>{cat.emoji}</span>
                 {cat.label}
@@ -357,16 +360,16 @@ export default function HabitsPage() {
                     transition={{ delay: i * 0.04 }}
                     className="game-card p-3.5 flex items-center gap-3"
                   >
-                    <div className="w-10 h-10 rounded-xl bg-[#1a1a3a] border border-[#2a2a5a] flex items-center justify-center text-xl flex-shrink-0">
+                    <div className="w-10 h-10 rounded-xl border flex items-center justify-center text-xl flex-shrink-0" style={{ background: "var(--theme-bg-dark)", borderColor: "var(--theme-border)" }}>
                       {habit.emoji || "📌"}
                     </div>
 
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm text-white font-game truncate">{habit.name}</p>
+                      <p className="text-sm font-game truncate" style={{ color: "var(--theme-text)" }}>{habit.name}</p>
                       <div className="flex items-center gap-2 mt-0.5">
-                        <span className="font-game text-xs text-[#8b5cf6]">+{xp} XP</span>
+                        <span className="font-game text-xs" style={{ color: "var(--theme-primary)" }}>+{xp} XP</span>
                         {habit.reminder_time && (
-                          <span className="font-game text-xs text-[#475569]">⏰ {habit.reminder_time}</span>
+                          <span className="font-game text-xs" style={{ color: "var(--theme-text-muted)" }}>⏰ {habit.reminder_time}</span>
                         )}
                         {habit.current_streak > 0 && (
                           <span className="font-game text-xs text-orange-400">🔥{habit.current_streak}</span>
@@ -378,13 +381,15 @@ export default function HabitsPage() {
                       <Link
                         href={`/habits/${habit.id}/edit`}
                         onClick={() => play("click")}
-                        className="w-9 h-9 rounded-lg flex items-center justify-center border border-[#2a2a5a] bg-[#0c0c1d] hover:bg-[#1e1e3a] text-sm transition-colors"
+                        className="w-9 h-9 rounded-lg flex items-center justify-center border text-sm transition-colors"
+                        style={{ borderColor: "var(--theme-border)", background: "var(--theme-bg-dark)" }}
                       >
                         ✏️
                       </Link>
                       <button
                         onClick={() => { play("click"); setDeleteId(habit.id); }}
-                        className="w-9 h-9 rounded-lg flex items-center justify-center border border-[#2a2a5a] bg-[#0c0c1d] hover:bg-[#ef4444]/20 text-sm transition-colors"
+                        className="w-9 h-9 rounded-lg flex items-center justify-center border text-sm transition-colors"
+                        style={{ borderColor: "var(--theme-border)", background: "var(--theme-bg-dark)" }}
                       >
                         🗑️
                       </button>
@@ -395,8 +400,8 @@ export default function HabitsPage() {
             ) : (
               <div className="game-card p-10 text-center">
                 <p className="text-5xl mb-3 animate-float">🗡️</p>
-                <p className="font-game text-sm text-[#94a3b8] mb-2">ยังไม่มีภารกิจ</p>
-                <p className="text-sm text-[#475569] mb-4">เลือกจากเทมเพลต หรือสร้างเอง!</p>
+                <p className="font-game text-sm mb-2" style={{ color: "var(--theme-text-dim)" }}>ยังไม่มีภารกิจ</p>
+                <p className="text-sm mb-4" style={{ color: "var(--theme-text-muted)" }}>เลือกจากเทมเพลต หรือสร้างเอง!</p>
                 <div className="flex gap-2 justify-center flex-wrap">
                   <button
                     onClick={() => { play("click"); setActiveTab("templates"); }}
@@ -420,8 +425,8 @@ export default function HabitsPage() {
           {/* Stats */}
           {habits.length > 0 && (
             <div className="game-card p-3 flex items-center justify-between">
-              <span className="font-game text-xs text-[#94a3b8]">ภารกิจทั้งหมด</span>
-              <span className="font-game text-sm text-[#fbbf24]">{habits.length}</span>
+              <span className="font-game text-xs" style={{ color: "var(--theme-text-dim)" }}>ภารกิจทั้งหมด</span>
+              <span className="font-game text-sm" style={{ color: "var(--theme-xp)" }}>{habits.length}</span>
             </div>
           )}
         </motion.div>

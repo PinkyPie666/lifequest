@@ -135,9 +135,9 @@
   }
 
   .game-btn-secondary {
-    background: linear-gradient(180deg, #334155 0%, #1e293b 40%, #0f172a 100%);
-    color: #94a3b8;
-    border: 1px solid rgba(148,163,184,0.2);
+    background: linear-gradient(180deg, var(--theme-bg-card, #334155) 0%, var(--theme-bg-dark, #1e293b) 100%);
+    color: var(--theme-text-dim, #94a3b8);
+    border: 1px solid var(--theme-border, rgba(148,163,184,0.2));
   }
 
   .game-btn-google {
@@ -174,8 +174,8 @@
   }
 
   .bar-track {
-    background: rgba(15,15,35,0.8);
-    border: 1px solid rgba(42,42,90,0.5);
+    background: var(--theme-bg-dark, rgba(15,15,35,0.8));
+    border: 1px solid var(--theme-border, rgba(42,42,90,0.5));
     border-radius: 6px;
     overflow: hidden;
   }

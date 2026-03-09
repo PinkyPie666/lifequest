@@ -52,7 +52,7 @@ export default function ProfilePage() {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <div className="text-4xl mb-3 animate-float">👤</div>
-          <p className="font-game text-sm text-[#94a3b8]">กำลังโหลด...</p>
+          <p className="font-game text-sm" style={{ color: "var(--theme-text-dim)" }}>กำลังโหลด...</p>
         </div>
       </div>
     );
@@ -87,7 +87,7 @@ export default function ProfilePage() {
         animate={{ opacity: 1, y: 0 }}
         className="flex items-center justify-between"
       >
-        <h1 className="font-heading text-lg text-white">👤 โปรไฟล์</h1>
+        <h1 className="font-heading text-lg" style={{ color: "var(--theme-text)" }}>👤 โปรไฟล์</h1>
         <Link
           href="/settings"
           onClick={() => play("navigate")}
@@ -104,15 +104,15 @@ export default function ProfilePage() {
         transition={{ delay: 0.1 }}
         className="game-card p-5 text-center"
       >
-        <div className="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br from-[#8b5cf6]/30 to-[#6366f1]/30 flex items-center justify-center text-4xl border border-[#8b5cf6]/30 mb-3">
+        <div className="w-20 h-20 mx-auto rounded-2xl flex items-center justify-center text-4xl border mb-3" style={{ background: "linear-gradient(135deg, color-mix(in srgb, var(--theme-primary) 20%, transparent), color-mix(in srgb, var(--theme-secondary) 20%, transparent))", borderColor: "color-mix(in srgb, var(--theme-primary) 30%, transparent)" }}>
           {profile.avatar_url ? (
             <img src={profile.avatar_url} alt="" className="w-16 h-16 rounded-xl object-cover" />
           ) : "⚔️"}
         </div>
-        <h2 className="font-heading text-xl text-white">{profile.username || profile.full_name || "นักผจญภัย"}</h2>
+        <h2 className="font-heading text-xl" style={{ color: "var(--theme-text)" }}>{profile.username || profile.full_name || "นักผจญภัย"}</h2>
         <div className="flex items-center justify-center gap-2 mt-1">
-          <span className="font-game text-sm text-[#fbbf24]">Lv.{profile.level}</span>
-          <span className="font-game text-sm" style={{ color: "#f59e0b" }}>{rank.emoji} {rank.name}</span>
+          <span className="font-game text-sm" style={{ color: "var(--theme-xp)" }}>Lv.{profile.level}</span>
+          <span className="font-game text-sm" style={{ color: "var(--theme-xp)" }}>{rank.emoji} {rank.name}</span>
         </div>
 
         <button
@@ -131,8 +131,8 @@ export default function ProfilePage() {
         className="game-card p-4"
       >
         <div className="flex items-center justify-between mb-2">
-          <span className="font-game text-sm text-[#fbbf24]">Level Progress</span>
-          <span className="font-game text-sm text-[#94a3b8]">Lv.{profile.level} → Lv.{profile.level + 1}</span>
+          <span className="font-game text-sm" style={{ color: "var(--theme-xp)" }}>Level Progress</span>
+          <span className="font-game text-sm" style={{ color: "var(--theme-text-dim)" }}>Lv.{profile.level} → Lv.{profile.level + 1}</span>
         </div>
         <div className="bar-track h-5">
           <motion.div
@@ -142,7 +142,7 @@ export default function ProfilePage() {
             transition={{ duration: 0.8 }}
           />
         </div>
-        <p className="font-game text-xs text-[#94a3b8] mt-1 text-right">
+        <p className="font-game text-xs mt-1 text-right" style={{ color: "var(--theme-text-dim)" }}>
           {profile.total_xp} / {xpForNext} XP ({xpPct}%)
         </p>
       </motion.div>
@@ -162,8 +162,8 @@ export default function ProfilePage() {
         ].map((s) => (
           <div key={s.label} className="game-card p-3.5 text-center">
             <span className="text-2xl">{s.emoji}</span>
-            <p className="font-heading text-lg text-white mt-1">{s.value}</p>
-            <p className="font-game text-xs text-[#94a3b8]">{s.label}</p>
+            <p className="font-heading text-lg mt-1" style={{ color: "var(--theme-text)" }}>{s.value}</p>
+            <p className="font-game text-xs" style={{ color: "var(--theme-text-dim)" }}>{s.label}</p>
           </div>
         ))}
       </motion.div>
@@ -200,16 +200,17 @@ export default function ProfilePage() {
               className="game-card p-5 w-full max-w-sm space-y-4"
               onClick={(e) => e.stopPropagation()}
             >
-              <h2 className="font-heading text-base text-[#fbbf24] text-center">แก้ไขโปรไฟล์</h2>
+              <h2 className="font-heading text-base text-center" style={{ color: "var(--theme-xp)" }}>แก้ไขโปรไฟล์</h2>
 
               <div>
-                <p className="font-game text-xs text-[#94a3b8] mb-1.5">ชื่อผู้เล่น</p>
+                <p className="font-game text-xs mb-1.5" style={{ color: "var(--theme-text-dim)" }}>ชื่อผู้เล่น</p>
                 <input
                   type="text"
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
                   maxLength={20}
-                  className="w-full bg-[#0c0c1d] border border-[#2a2a5a] rounded-lg px-4 py-2.5 text-sm text-white focus:border-[#8b5cf6] focus:outline-none focus:ring-1 focus:ring-[#8b5cf6]/50 transition-all"
+                  className="w-full rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-1 transition-all border"
+                  style={{ background: "var(--theme-bg-dark)", borderColor: "var(--theme-border)", color: "var(--theme-text)" }}
                 />
               </div>
 
@@ -247,8 +248,8 @@ export default function ProfilePage() {
               onClick={(e) => e.stopPropagation()}
             >
               <p className="text-4xl">👋</p>
-              <p className="font-heading text-base text-white">ออกจากระบบ?</p>
-              <p className="text-sm text-[#94a3b8]">ข้อมูลของคุณจะถูกบันทึกไว้อย่างปลอดภัย</p>
+              <p className="font-heading text-base" style={{ color: "var(--theme-text)" }}>ออกจากระบบ?</p>
+              <p className="text-sm" style={{ color: "var(--theme-text-dim)" }}>ข้อมูลของคุณจะถูกบันทึกไว้อย่างปลอดภัย</p>
               <div className="flex gap-3">
                 <button
                   onClick={() => { play("click"); setShowLogout(false); }}
