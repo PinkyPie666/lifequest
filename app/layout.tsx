@@ -3,9 +3,21 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/common/ThemeProvider";
 
 export const metadata: Metadata = {
-  title: "LifeQuest - RPG Habit Tracker",
-  description: "Turn your life into an RPG adventure. Complete quests, earn XP, level up your real life.",
+  title: "LifeQuest — แอปดัดสันดาน เปลี่ยนชีวิตให้เป็นเกม RPG",
+  description: "แอปดัดสันดาน ที่เปลี่ยนการสร้างนิสัยดีๆ ให้เป็นเกม RPG สุดมันส์ ทำภารกิจ เก็บ XP เลเวลอัป แล้วดูตัวเองเปลี่ยนไปทีละนิดในชีวิตจริง 🎮⚔️",
   manifest: "/manifest.json",
+  openGraph: {
+    title: "LifeQuest — แอปดัดสันดาน 🎮⚔️",
+    description: "เบื่อชีวิตเดิมๆ? มาดัดสันดานผ่านเกม RPG กัน! ทำภารกิจประจำวัน เก็บ XP เลเวลอัป ผสมชีวิตจริงกับเกมแบบไม่เคยมีมาก่อน",
+    type: "website",
+    locale: "th_TH",
+    siteName: "LifeQuest",
+  },
+  twitter: {
+    card: "summary",
+    title: "LifeQuest — แอปดัดสันดาน 🎮⚔️",
+    description: "เบื่อชีวิตเดิมๆ? มาดัดสันดานผ่านเกม RPG กัน! ทำภารกิจประจำวัน เก็บ XP เลเวลอัป ผสมชีวิตจริงกับเกมแบบไม่เคยมีมาก่อน",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
@@ -31,7 +43,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
+    <html lang="th" className="dark">
       <head>
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />

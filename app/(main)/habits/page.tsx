@@ -505,15 +505,14 @@ export default function HabitsPage() {
                 <button
                   onClick={() => {
                     play("click");
+                    const shareText = `🎮 มาดัดสันดานด้วยกัน! ลองเทมเพลต "${selectedTemplate.name}" ใน LifeQuest — แอปดัดสันดานที่ผสมชีวิตจริงกับเกม RPG ⚔️\n\nhttps://lifequest-iota.vercel.app`;
                     if (navigator.share) {
                       navigator.share({
-                        title: selectedTemplate.name,
-                        text: `ลองเทมเพลต "${selectedTemplate.name}" ใน LifeQuest! ${selectedTemplate.description}`,
+                        title: `LifeQuest — แอปดัดสันดาน 🎮⚔️`,
+                        text: shareText,
                       }).catch(() => {});
                     } else {
-                      navigator.clipboard.writeText(
-                        `ลองเทมเพลต "${selectedTemplate.name}" ใน LifeQuest! ${selectedTemplate.description}`
-                      );
+                      navigator.clipboard.writeText(shareText);
                     }
                   }}
                   className="w-10 h-10 rounded-full flex items-center justify-center text-lg transition-all active:scale-90 flex-shrink-0"
