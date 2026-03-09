@@ -283,3 +283,176 @@ export async function markNotificationRead(notificationId: string) {
     .eq("id", notificationId);
   return { error };
 }
+
+// ─── Quest Playlists ────────────────────────────────────────
+
+export async function createPlaylist(playlist: {
+  user_id: string;
+  emoji: string;
+  name: string;
+  description?: string;
+  gradient?: string;
+  is_published?: boolean;
+}) {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("quest_playlists")
+    .insert(playlist)
+    .select()
+    .single();
+  return { data, error };
+}
+
+export async function updatePlaylist(playlistId: string, updates: {
+  emoji?: string;
+  name?: string;
+  description?: string;
+  gradient?: string;
+  is_published?: boolean;
+}) {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("quest_playlists")
+    .update(updates)
+    .eq("id", playlistId)
+    .select()
+    .single();
+  return { data, error };
+}
+
+export async function deletePlaylist(playlistId: string) {
+  const supabase = createClient();
+  const { error } = await supabase
+    .from("quest_playlists")
+    .delete()
+    .eq("id", playlistId);
+  return { error };
+}
+
+export async function fetchMyPlaylists(userId: string) {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("quest_playlists")
+    .select("*, quest_playlist_items(count)")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false });
+  return { data: data ?? [], error };
+}
+
+export async function fetchPublishedPlaylists() {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("quest_playlists")
+    .select("*, quest_playlist_items(count), profiles(username, avatar_url)")
+    .eq("is_published", true)
+    .order("like_count", { ascending: false })
+    .limit(50);
+  return { data: data ?? [], error };
+}
+
+export async function fetchPlaylistById(playlistId: string) {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("quest_playlists")
+    .select("*, profiles(username, avatar_url)")
+    .eq("id", playlistId)
+    .single();
+  return { data, error };
+}
+
+// ─── Playlist Items ─────────────────────────────────────────
+
+export async function addPlaylistItem(item: {
+  playlist_id: string;
+  emoji: string;
+  name: string;
+  description?: string;
+  category?: string;
+  importance?: number;
+  reminder_time?: string;
+  sort_order?: number;
+}) {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("quest_playlist_items")
+    .insert(item)
+    .select()
+    .single();
+  return { data, error };
+}
+
+export async function removePlaylistItem(itemId: string) {
+  const supabase = createClient();
+  const { error } = await supabase
+    .from("quest_playlist_items")
+    .delete()
+    .eq("id", itemId);
+  return { error };
+}
+
+export async function fetchPlaylistItems(playlistId: string) {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("quest_playlist_items")
+    .select("*")
+    .eq("playlist_id", playlistId)
+    .order("sort_order", { ascending: true });
+  return { data: data ?? [], error };
+}
+
+// ─── Template Likes ─────────────────────────────────────────
+
+export async function toggleTemplateLike(userId: string, templateId: string) {
+  const supabase = createClient();
+  // Check if already liked
+  const { data: existing } = await supabase
+    .from("template_likes")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("template_id", templateId)
+    .maybeSingle();
+
+  if (existing) {
+    await supabase.from("template_likes").delete().eq("id", existing.id);
+    return { liked: false };
+  } else {
+    await supabase.from("template_likes").insert({ user_id: userId, template_id: templateId });
+    return { liked: true };
+  }
+}
+
+export async function togglePlaylistLike(userId: string, playlistId: string) {
+  const supabase = createClient();
+  const { data: existing } = await supabase
+    .from("template_likes")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("playlist_id", playlistId)
+    .maybeSingle();
+
+  if (existing) {
+    await supabase.from("template_likes").delete().eq("id", existing.id);
+    return { liked: false };
+  } else {
+    await supabase.from("template_likes").insert({ user_id: userId, playlist_id: playlistId });
+    return { liked: true };
+  }
+}
+
+export async function fetchUserLikes(userId: string) {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("template_likes")
+    .select("template_id, playlist_id")
+    .eq("user_id", userId);
+  return { data: data ?? [], error };
+}
+
+export async function fetchTemplateLikeCount(templateId: string) {
+  const supabase = createClient();
+  const { count, error } = await supabase
+    .from("template_likes")
+    .select("*", { count: "exact", head: true })
+    .eq("template_id", templateId);
+  return { count: count ?? 0, error };
+}

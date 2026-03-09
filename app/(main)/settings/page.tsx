@@ -43,25 +43,43 @@ export default function SettingsPage() {
         transition={{ delay: 0.1 }}
         className="game-card p-4"
       >
-        <p className="font-heading text-sm text-[#fbbf24] mb-3">🎨 ธีม</p>
-        <div className="grid grid-cols-3 gap-2">
+        <p className="font-heading text-sm mb-3" style={{ color: "var(--theme-xp)" }}>🎨 ธีม</p>
+        <div className="grid grid-cols-2 gap-2">
           {(Object.keys(THEMES) as ThemeName[]).map((t) => (
             <button
               key={t}
               onClick={() => { play("toggle"); setTheme(t); }}
               className={cn(
-                "game-card p-3 text-center transition-all",
+                "relative rounded-xl p-3 text-left transition-all border-2",
                 theme === t
-                  ? "border-[#fbbf24]/50 bg-[#fbbf24]/10"
-                  : "hover:bg-white/5"
+                  ? "border-[var(--theme-primary)] shadow-lg"
+                  : "border-transparent hover:border-[var(--theme-border)]"
               )}
+              style={{
+                backgroundColor: THEMES[t].colors.bgCard,
+              }}
             >
-              <div
-                className="w-8 h-8 mx-auto mb-1.5 rounded-lg border-2"
-                style={{ backgroundColor: THEMES[t].colors.bg, borderColor: THEMES[t].colors.primary }}
-              />
-              <p className="font-game text-xs text-white">{THEMES[t].label}</p>
-              <p className="font-game text-[10px] text-[#94a3b8]">{THEMES[t].labelTh}</p>
+              {theme === t && (
+                <div className="absolute top-2 right-2 w-5 h-5 rounded-full flex items-center justify-center text-[10px]"
+                  style={{ background: THEMES[t].colors.primary, color: "#fff" }}>✓</div>
+              )}
+              <div className="flex items-center gap-2.5 mb-2">
+                <div
+                  className="w-10 h-10 rounded-lg flex items-center justify-center text-xl border"
+                  style={{ backgroundColor: THEMES[t].colors.bg, borderColor: THEMES[t].colors.border }}
+                >
+                  {THEMES[t].preview}
+                </div>
+                <div>
+                  <p className="font-game text-xs" style={{ color: THEMES[t].colors.text }}>{THEMES[t].label}</p>
+                  <p className="font-game text-[10px]" style={{ color: THEMES[t].colors.textDim }}>{THEMES[t].labelTh}</p>
+                </div>
+              </div>
+              <div className="flex gap-1">
+                {[THEMES[t].colors.primary, THEMES[t].colors.secondary, THEMES[t].colors.accent, THEMES[t].colors.xp].map((c, i) => (
+                  <div key={i} className="w-4 h-4 rounded-full border border-black/20" style={{ backgroundColor: c }} />
+                ))}
+              </div>
             </button>
           ))}
         </div>

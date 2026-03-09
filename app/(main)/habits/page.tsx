@@ -6,7 +6,7 @@ import { useSoundEffect } from "@/hooks/useSoundEffect";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { getCurrentUser, fetchHabits, deleteHabit, createHabit } from "@/lib/supabase/api";
+import { getCurrentUser, fetchHabits, deleteHabit, createHabit, toggleTemplateLike, fetchUserLikes } from "@/lib/supabase/api";
 import type { HabitRow } from "@/types/database";
 import { HABIT_TEMPLATES, TEMPLATE_CATEGORIES, type HabitTemplate, type TemplateCategory } from "@/lib/templates";
 
@@ -32,14 +32,26 @@ export default function HabitsPage() {
   const [loading, setLoading] = useState(true);
   const [applying, setApplying] = useState(false);
   const [appliedId, setAppliedId] = useState<string | null>(null);
+  const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
+  const [likeCounts, setLikeCounts] = useState<Record<string, number>>({});
 
   useEffect(() => {
     async function load() {
       const user = await getCurrentUser();
       if (!user) { router.replace("/login"); return; }
       setUserId(user.id);
-      const { data } = await fetchHabits(user.id);
-      setHabits(data);
+      const [habitsRes, likesRes] = await Promise.all([
+        fetchHabits(user.id),
+        fetchUserLikes(user.id),
+      ]);
+      setHabits(habitsRes.data);
+      const liked = new Set<string>();
+      likesRes.data.forEach((l) => { if (l.template_id) liked.add(l.template_id); });
+      setLikedIds(liked);
+      // Init like counts from template popularity
+      const counts: Record<string, number> = {};
+      HABIT_TEMPLATES.forEach((t) => { counts[t.id] = t.popularity; });
+      setLikeCounts(counts);
       setLoading(false);
     }
     load();
@@ -67,6 +79,23 @@ export default function HabitsPage() {
       setDeleteId(null);
     }
   }, [deleteId, play]);
+
+  const handleLike = useCallback(async (templateId: string) => {
+    if (!userId) return;
+    play("click");
+    const wasLiked = likedIds.has(templateId);
+    // Optimistic update
+    setLikedIds((prev) => {
+      const next = new Set(prev);
+      if (wasLiked) next.delete(templateId); else next.add(templateId);
+      return next;
+    });
+    setLikeCounts((prev) => ({
+      ...prev,
+      [templateId]: (prev[templateId] || 0) + (wasLiked ? -1 : 1),
+    }));
+    await toggleTemplateLike(userId, templateId);
+  }, [userId, likedIds, play]);
 
   const handleUseTemplate = useCallback(async (template: HabitTemplate) => {
     if (!userId || applying) return;
@@ -188,9 +217,17 @@ export default function HabitsPage() {
                       <span className="font-game text-[10px] text-[#8b5cf6] bg-[#8b5cf6]/10 px-2 py-0.5 rounded-md">
                         {tmpl.habits.length} ภารกิจ
                       </span>
-                      {tmpl.tags.slice(0, 1).map((tag) => (
-                        <span key={tag} className="font-game text-[10px] text-[#fbbf24] bg-[#fbbf24]/10 px-2 py-0.5 rounded-md">{tag}</span>
-                      ))}
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleLike(tmpl.id); }}
+                        className="ml-auto flex items-center gap-1 font-game text-[10px] transition-all active:scale-90"
+                      >
+                        <span className={likedIds.has(tmpl.id) ? "text-red-400" : "text-[#475569]"}>
+                          {likedIds.has(tmpl.id) ? "❤️" : "🤍"}
+                        </span>
+                        <span className={likedIds.has(tmpl.id) ? "text-red-400" : "text-[#475569]"}>
+                          {likeCounts[tmpl.id] ? (likeCounts[tmpl.id] > 1000 ? `${(likeCounts[tmpl.id] / 1000).toFixed(1)}k` : likeCounts[tmpl.id]) : 0}
+                        </span>
+                      </button>
                     </div>
                   </div>
                 </motion.button>
@@ -246,9 +283,15 @@ export default function HabitsPage() {
                     <span className="font-game text-[9px] text-[#8b5cf6] bg-[#8b5cf6]/10 px-1.5 py-0.5 rounded">
                       {tmpl.habits.length} ภารกิจ
                     </span>
-                    <span className="font-game text-[9px] text-[#475569]">
-                      🔥 {tmpl.popularity > 1000 ? `${(tmpl.popularity / 1000).toFixed(1)}k` : tmpl.popularity}
-                    </span>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleLike(tmpl.id); }}
+                      className="ml-auto flex items-center gap-0.5 font-game text-[9px] transition-all active:scale-90"
+                    >
+                      <span>{likedIds.has(tmpl.id) ? "❤️" : "🤍"}</span>
+                      <span className={likedIds.has(tmpl.id) ? "text-red-400" : "text-[#475569]"}>
+                        {likeCounts[tmpl.id] ? (likeCounts[tmpl.id] > 1000 ? `${(likeCounts[tmpl.id] / 1000).toFixed(1)}k` : likeCounts[tmpl.id]) : 0}
+                      </span>
+                    </button>
                   </div>
                 </div>
               </motion.button>
@@ -449,19 +492,32 @@ export default function HabitsPage() {
               </div>
 
               {/* Action */}
-              <div className="p-4 border-t border-[#2a2a5a]">
-                <button
-                  onClick={() => handleUseTemplate(selectedTemplate)}
-                  disabled={applying}
-                  className={cn(
-                    "w-full py-3.5 rounded-xl font-heading text-base transition-all",
-                    applying
-                      ? "bg-[#475569] text-[#94a3b8] cursor-wait"
-                      : "bg-gradient-to-r from-[#8b5cf6] to-[#6366f1] text-white hover:shadow-lg hover:shadow-purple-500/25 active:scale-[0.98]"
-                  )}
-                >
-                  {applying ? "⏳ กำลังเพิ่ม..." : `✨ ใช้เทมเพลตนี้ (${selectedTemplate.habits.length} ภารกิจ)`}
-                </button>
+              <div className="p-4 border-t border-[#2a2a5a] space-y-2">
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleLike(selectedTemplate.id)}
+                    className={cn(
+                      "px-4 py-3.5 rounded-xl font-heading text-base transition-all active:scale-[0.95] border",
+                      likedIds.has(selectedTemplate.id)
+                        ? "border-red-400/50 bg-red-400/10 text-red-400"
+                        : "border-[#2a2a5a] text-[#94a3b8]"
+                    )}
+                  >
+                    {likedIds.has(selectedTemplate.id) ? "❤️" : "🤍"}
+                  </button>
+                  <button
+                    onClick={() => handleUseTemplate(selectedTemplate)}
+                    disabled={applying}
+                    className={cn(
+                      "flex-1 py-3.5 rounded-xl font-heading text-base transition-all",
+                      applying
+                        ? "bg-[#475569] text-[#94a3b8] cursor-wait"
+                        : "bg-gradient-to-r from-[#8b5cf6] to-[#6366f1] text-white hover:shadow-lg hover:shadow-purple-500/25 active:scale-[0.98]"
+                    )}
+                  >
+                    {applying ? "⏳ กำลังเพิ่ม..." : `✨ ใช้เทมเพลตนี้`}
+                  </button>
+                </div>
               </div>
             </motion.div>
           </motion.div>

@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import { ThemeProvider } from "@/components/common/ThemeProvider";
 
 export const metadata: Metadata = {
   title: "LifeQuest - RPG Habit Tracker",
@@ -36,10 +37,12 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
       </head>
-      <body className="font-body min-h-screen bg-[#0c0c1d] text-[#e2e8f0] overflow-x-hidden">
-        <div className="relative min-h-screen">
-          {children}
-        </div>
+      <body className="font-body min-h-screen overflow-x-hidden" style={{ backgroundColor: "#0c0c1d", color: "#e2e8f0" }}>
+        <ThemeProvider>
+          <div className="relative min-h-screen">
+            {children}
+          </div>
+        </ThemeProvider>
       </body>
     </html>
   );

@@ -298,6 +298,128 @@ export interface Database {
           },
         ];
       };
+      quest_playlists: {
+        Row: {
+          id: string;
+          user_id: string;
+          emoji: string;
+          name: string;
+          description: string | null;
+          gradient: string;
+          is_published: boolean;
+          like_count: number;
+          use_count: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          emoji?: string;
+          name: string;
+          description?: string | null;
+          gradient?: string;
+          is_published?: boolean;
+          like_count?: number;
+          use_count?: number;
+        };
+        Update: {
+          emoji?: string;
+          name?: string;
+          description?: string | null;
+          gradient?: string;
+          is_published?: boolean;
+          like_count?: number;
+          use_count?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "quest_playlists_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      quest_playlist_items: {
+        Row: {
+          id: string;
+          playlist_id: string;
+          emoji: string;
+          name: string;
+          description: string | null;
+          category: string;
+          importance: number;
+          reminder_time: string | null;
+          sort_order: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          playlist_id: string;
+          emoji?: string;
+          name: string;
+          description?: string | null;
+          category?: string;
+          importance?: number;
+          reminder_time?: string | null;
+          sort_order?: number;
+        };
+        Update: {
+          emoji?: string;
+          name?: string;
+          description?: string | null;
+          category?: string;
+          importance?: number;
+          reminder_time?: string | null;
+          sort_order?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "quest_playlist_items_playlist_id_fkey";
+            columns: ["playlist_id"];
+            isOneToOne: false;
+            referencedRelation: "quest_playlists";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      template_likes: {
+        Row: {
+          id: string;
+          user_id: string;
+          template_id: string | null;
+          playlist_id: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          template_id?: string | null;
+          playlist_id?: string | null;
+        };
+        Update: {
+          template_id?: string | null;
+          playlist_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "template_likes_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "template_likes_playlist_id_fkey";
+            columns: ["playlist_id"];
+            isOneToOne: false;
+            referencedRelation: "quest_playlists";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: {};
     Functions: {
@@ -322,3 +444,6 @@ export type HabitLog = Database["public"]["Tables"]["habit_logs"]["Row"];
 export type AchievementRow = Database["public"]["Tables"]["achievements"]["Row"];
 export type UserAchievement = Database["public"]["Tables"]["user_achievements"]["Row"];
 export type Notification = Database["public"]["Tables"]["notifications"]["Row"];
+export type QuestPlaylist = Database["public"]["Tables"]["quest_playlists"]["Row"];
+export type QuestPlaylistItem = Database["public"]["Tables"]["quest_playlist_items"]["Row"];
+export type TemplateLike = Database["public"]["Tables"]["template_likes"]["Row"];
